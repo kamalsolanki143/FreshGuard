@@ -74,3 +74,4 @@ func HashText(text string) string {
 	h.Write([]byte(strings.TrimSpace(text)))
 	return hex.EncodeToString(h.Sum(nil))
 }
+

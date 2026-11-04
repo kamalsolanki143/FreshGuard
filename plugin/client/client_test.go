@@ -240,3 +240,4 @@ func TestClient_GetVerification(t *testing.T) {
 		t.Errorf("expected status completed, got %s", res.Status)
 	}
 }
+

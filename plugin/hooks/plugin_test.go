@@ -360,3 +360,4 @@ func TestPlugin_PostLLMHook_CacheHit_Expired_EvictsAndReverifies(t *testing.T) {
 		t.Errorf("expected is_fresh true after successful reverification, got %v", fg["is_fresh"])
 	}
 }
+

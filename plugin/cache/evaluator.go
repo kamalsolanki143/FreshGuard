@@ -125,3 +125,4 @@ func (e *Evaluator) RecordVerification(cacheID string, responseText string, vRes
 	e.ledger.Put(meta)
 	return meta
 }
+

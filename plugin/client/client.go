@@ -315,3 +315,4 @@ func (c *Client) calculateBackoff(attempt int) time.Duration {
 	}
 	return d
 }
+

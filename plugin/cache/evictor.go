@@ -86,3 +86,4 @@ func (b *BifrostEvictor) EvictByCacheKey(ctx context.Context, cacheKey string) e
 
 	return fmt.Errorf("bifrost key eviction returned unexpected status code: %d", resp.StatusCode)
 }
+
