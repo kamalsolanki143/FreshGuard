@@ -1,0 +1,13 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+htmlcov
+freshguard.db
+freshguard.db-journal
+.env
+.git
+.gitignore

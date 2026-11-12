@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: freshguard-verification
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: verification-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health/ready
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ENVIRONMENT
+        value: staging
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      # Restrict CORS to expected frontend and gateway origins (avoid wildcard *)
+      - key: CORS_ORIGINS
+        value: "http://localhost:3000,http://localhost:5173,https://freshguard.vercel.app"
+      # IMPORTANT: On Render Free tier, the local disk is EPHEMERAL.
+      # freshguard.db will be reset upon container restart or idle sleep.
+      # Persistent storage requires Render paid plan with persistent disk or external PostgreSQL.
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:///./freshguard.db
+      # IMPORTANT: "mock" provider DOES NOT perform real AI verification or call external LLMs.
+      # It returns deterministic stub responses for connectivity and contract testing.
+      # To enable real AI verification, set LLM_PROVIDER to "openai" and supply LLM_API_KEY.
+      - key: LLM_PROVIDER
+        value: mock
+      - key: LLM_MODEL
+        value: gpt-4o-mini
+      - key: LLM_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
