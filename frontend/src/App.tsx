@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Hero } from '@components/Hero';
+import { VerificationSandbox } from '@components/VerificationSandbox';
 import { ProblemStatement } from '@components/ProblemStatement';
 import { ProposedSolution } from '@components/ProposedSolution';
 import { Features } from '@components/Features';
@@ -28,6 +29,7 @@ export function App() {
 
       <main className="flex flex-col">
         <Hero />
+        <VerificationSandbox />
         <ProblemStatement />
         <ProposedSolution />
         <Features />

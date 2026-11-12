@@ -9,6 +9,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { name: 'Live Sandbox', href: '#sandbox' },
   { name: 'Problem', href: '#problem' },
   { name: 'Solution', href: '#solution' },
   { name: 'Features', href: '#features' },

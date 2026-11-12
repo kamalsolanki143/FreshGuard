@@ -10,3 +10,4 @@ export { CTA } from './CTA';
 export { Footer } from './Footer';
 export { FloatingCTA } from './FloatingCTA';
 export { FloatingBoxScene, FloatingOrbs, MiniSphere } from './FloatingBox';
+export { VerificationSandbox } from './VerificationSandbox';
