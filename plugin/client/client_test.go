@@ -241,3 +241,52 @@ func TestClient_GetVerification(t *testing.T) {
 	}
 }
 
+func TestClient_Verify_APIKeyAuthentication(t *testing.T) {
+	expectedAPIKey := "secret-test-key-xyz"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-API-Key") != expectedAPIKey {
+			w.WriteHeader(http.StatusUnauthorized)
+			_ = json.NewEncoder(w).Encode(APIError{
+				Code:      "UNAUTHORIZED",
+				Message:   "Invalid or missing API key",
+				RequestID: r.Header.Get("X-Request-ID"),
+			})
+			return
+		}
+		now := time.Now().UTC()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(VerificationResponse{
+			VerificationID: "ver-auth-success",
+			RequestID:      r.Header.Get("X-Request-ID"),
+			Status:         StatusCompleted,
+			CheckedAt:      &now,
+		})
+	}))
+	defer server.Close()
+
+	// 1. Without API key -> fails with 401
+	cfgNoKey := Config{BaseURL: server.URL, Timeout: 1 * time.Second}
+	clientNoKey, _ := NewClient(cfgNoKey, nil)
+	_, err := clientNoKey.Verify(context.Background(), VerificationRequest{
+		RequestID: "req-auth-1",
+		Text:      "Test text",
+	})
+	if err == nil {
+		t.Fatal("expected 401 error without API key, got nil")
+	}
+
+	// 2. With API key -> succeeds
+	cfgWithKey := Config{BaseURL: server.URL, APIKey: expectedAPIKey, Timeout: 1 * time.Second}
+	clientWithKey, _ := NewClient(cfgWithKey, nil)
+	resp, err := clientWithKey.Verify(context.Background(), VerificationRequest{
+		RequestID: "req-auth-2",
+		Text:      "Test text",
+	})
+	if err != nil {
+		t.Fatalf("expected verification with API key to succeed, got: %v", err)
+	}
+	if resp.VerificationID != "ver-auth-success" {
+		t.Errorf("unexpected verification ID: %s", resp.VerificationID)
+	}
+}
+

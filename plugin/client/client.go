@@ -55,6 +55,8 @@ type Claim struct {
 	OriginalText   string     `json:"original_text"`
 	Verdict        string     `json:"verdict"`
 	Confidence     float64    `json:"confidence"`
+	Reason         string     `json:"reason,omitempty"`
+	EvidenceIDs    []string   `json:"evidence_ids,omitempty"`
 	CorrectedValue *string    `json:"corrected_value,omitempty"`
 	CheckedAt      time.Time  `json:"checked_at"`
 	Evidence       []Evidence `json:"evidence,omitempty"`
@@ -86,18 +88,23 @@ type VerificationRequest struct {
 
 // VerificationResponse returned from POST /v1/verifications or GET /v1/verifications/{id}.
 type VerificationResponse struct {
-	VerificationID string     `json:"verification_id"`
-	RequestID      string     `json:"request_id"`
-	Status         string     `json:"status"`
-	ResultURL      string     `json:"result_url,omitempty"`
-	CheckedAt      *time.Time `json:"checked_at,omitempty"`
-	Claims         []Claim    `json:"claims,omitempty"`
-	Error          *APIError  `json:"error,omitempty"`
+	VerificationID   string     `json:"verification_id"`
+	RequestID        string     `json:"request_id"`
+	Status           string     `json:"status"` // Lifecycle: "accepted", "completed", "failed"
+	FreshnessStatus  *string    `json:"freshness_status,omitempty"` // "FRESH", "STALE", "UNCERTAIN", "NOT_REQUIRED"
+	RequiresRefresh  bool       `json:"requires_refresh"`
+	ClaimsChecked    int        `json:"claims_checked"`
+	ProcessingTimeMs int        `json:"processing_time_ms"`
+	ResultURL        string     `json:"result_url,omitempty"`
+	CheckedAt        *time.Time `json:"checked_at,omitempty"`
+	Claims           []Claim    `json:"claims,omitempty"`
+	Error            *APIError  `json:"error,omitempty"`
 }
 
 // Config provides settings for VerificationClient.
 type Config struct {
 	BaseURL     string        `json:"base_url"`
+	APIKey      string        `json:"api_key,omitempty"`
 	Timeout     time.Duration `json:"timeout"`
 	MaxRetries  int           `json:"max_retries"`
 	BackoffBase time.Duration `json:"backoff_base"`
@@ -202,6 +209,9 @@ func (c *Client) Verify(ctx context.Context, req VerificationRequest) (*Verifica
 		httpReq.Header.Set("Content-Type", "application/json")
 		httpReq.Header.Set("Accept", "application/json")
 		httpReq.Header.Set("X-Request-ID", req.RequestID)
+		if c.config.APIKey != "" {
+			httpReq.Header.Set("X-API-Key", c.config.APIKey)
+		}
 
 		resp, err := c.httpClient.Do(httpReq)
 		if err != nil {
@@ -270,6 +280,9 @@ func (c *Client) GetVerification(ctx context.Context, verificationID string, req
 	httpReq.Header.Set("Accept", "application/json")
 	if requestID != "" {
 		httpReq.Header.Set("X-Request-ID", requestID)
+	}
+	if c.config.APIKey != "" {
+		httpReq.Header.Set("X-API-Key", c.config.APIKey)
 	}
 
 	resp, err := c.httpClient.Do(httpReq)
