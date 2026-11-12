@@ -80,3 +80,4 @@ func (m FreshnessMetadata) HasSupportedClaims() bool {
 	}
 	return hasSupported
 }
+
