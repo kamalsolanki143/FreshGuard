@@ -17,6 +17,7 @@ import (
 // PluginConfig represents the configuration options for FreshGuard plugin.
 type PluginConfig struct {
 	VerificationServiceURL string        `json:"verification_service_url"`
+	APIKey                 string        `json:"api_key,omitempty"`
 	Timeout                time.Duration `json:"timeout"`
 	MaxRetries             int           `json:"max_retries"`
 	FailOpen               bool          `json:"fail_open"`
@@ -66,6 +67,7 @@ func NewPlugin(
 	if vClient == nil {
 		c, _ := client.NewClient(client.Config{
 			BaseURL:     cfg.VerificationServiceURL,
+			APIKey:      cfg.APIKey,
 			Timeout:     cfg.Timeout,
 			MaxRetries:  cfg.MaxRetries,
 			FailOpen:    cfg.FailOpen,
@@ -111,6 +113,7 @@ func (p *FreshGuardPlugin) Init(rawConfig any) error {
 
 	c, err := client.NewClient(client.Config{
 		BaseURL:     cfg.VerificationServiceURL,
+		APIKey:      cfg.APIKey,
 		Timeout:     cfg.Timeout,
 		MaxRetries:  cfg.MaxRetries,
 		FailOpen:    cfg.FailOpen,
@@ -222,12 +225,23 @@ func (p *FreshGuardPlugin) PostLLMHook(
 				Categories: p.config.Categories,
 			})
 			if err == nil && vResp != nil && vResp.Status == client.StatusCompleted {
+				// If the verification engine specifically determined the content is stale or requires refresh,
+				// evict immediately from Bifrost's semantic cache.
+				if (vResp.RequiresRefresh || (vResp.FreshnessStatus != nil && *vResp.FreshnessStatus == "STALE")) &&
+					p.config.EnableCacheEviction && p.evictor != nil && cacheID != "" {
+					_ = p.evictor.EvictByCacheID(ctx.Ctx, cacheID)
+				}
+
 				// Successfully re-verified! Update ledger
 				newMeta := p.evaluator.RecordVerification(cacheID, responseText, vResp)
 				resp.ExtraFields["freshguard"] = map[string]any{
 					"status":                  "reverified",
-					"is_fresh":                true,
-					"reverification_required": false,
+					"is_fresh":                !vResp.RequiresRefresh,
+					"reverification_required": vResp.RequiresRefresh,
+					"freshness_status":        vResp.FreshnessStatus,
+					"requires_refresh":        vResp.RequiresRefresh,
+					"claims_checked":          vResp.ClaimsChecked,
+					"processing_time_ms":      vResp.ProcessingTimeMs,
 					"cache_id":                cacheID,
 					"verification_id":         vResp.VerificationID,
 					"checked_at":              newMeta.CheckedAt,
@@ -289,8 +303,12 @@ func (p *FreshGuardPlugin) PostLLMHook(
 
 	resp.ExtraFields["freshguard"] = map[string]any{
 		"status":                  "verified",
-		"is_fresh":                true,
-		"reverification_required": false,
+		"is_fresh":                !vResp.RequiresRefresh,
+		"reverification_required": vResp.RequiresRefresh,
+		"freshness_status":        vResp.FreshnessStatus,
+		"requires_refresh":        vResp.RequiresRefresh,
+		"claims_checked":          vResp.ClaimsChecked,
+		"processing_time_ms":      vResp.ProcessingTimeMs,
 		"verification_id":         vResp.VerificationID,
 		"checked_at":              meta.CheckedAt,
 		"expires_at":              meta.ExpiresAt,
