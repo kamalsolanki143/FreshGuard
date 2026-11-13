@@ -1,47 +1,50 @@
-import { useEffect, useState } from 'react';
-import { Hero } from '@components/Hero';
-import { VerificationSandbox } from '@components/VerificationSandbox';
-import { ProblemStatement } from '@components/ProblemStatement';
-import { ProposedSolution } from '@components/ProposedSolution';
-import { Features } from '@components/Features';
-import { HowItWorks } from '@components/HowItWorks';
-import { Benefits } from '@components/Benefits';
-import { FAQ } from '@components/FAQ';
-import { CTA } from '@components/CTA';
-import { Footer } from '@components/Footer';
-import { Navigation } from '@components/Navigation';
-import { FloatingCTA } from '@components/FloatingCTA';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './lib/authContext';
+import { HistoryProvider } from './lib/historyContext';
+
+import { LandingPage } from './pages/LandingPage';
+import { DocsPage } from './pages/DocsPage';
+import { LoginPage } from './pages/auth/LoginPage';
+import { SignupPage } from './pages/auth/SignupPage';
+
+import { DashboardLayout } from './components/layout/DashboardLayout';
+import { OverviewPage } from './pages/dashboard/OverviewPage';
+import { VerifyPage } from './pages/dashboard/VerifyPage';
+import { HistoryPage } from './pages/dashboard/HistoryPage';
+import { CachePage } from './pages/dashboard/CachePage';
+import { IntegrationsPage } from './pages/dashboard/IntegrationsPage';
+import { SettingsPage } from './pages/dashboard/SettingsPage';
 
 export function App() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 100);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <Navigation scrolled={scrolled} />
+    <AuthProvider>
+      <HistoryProvider>
+        <Router>
+          <Routes>
+            {/* Public Marketing & Docs Routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/docs" element={<DocsPage />} />
 
-      <main className="flex flex-col">
-        <Hero />
-        <VerificationSandbox />
-        <ProblemStatement />
-        <ProposedSolution />
-        <Features />
-        <HowItWorks />
-        <Benefits />
-        <FAQ />
-        <CTA />
-      </main>
+            {/* Authentication & Guest Access Routes */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
 
-      <FloatingCTA />
-      <Footer />
-    </div>
+            {/* Application Dashboard Shell & Workspaces */}
+            <Route path="/dashboard" element={<DashboardLayout />}>
+              <Route index element={<OverviewPage />} />
+              <Route path="verify" element={<VerifyPage />} />
+              <Route path="history" element={<HistoryPage />} />
+              <Route path="cache" element={<CachePage />} />
+              <Route path="integrations" element={<IntegrationsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
+
+            {/* Fallback to Home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </HistoryProvider>
+    </AuthProvider>
   );
 }
 

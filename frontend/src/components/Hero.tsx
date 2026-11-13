@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float } from '@react-three/drei';
 import { Mesh, Vector3 } from 'three';
-import { APP_CONFIG } from '../lib/constants';
 import { ShieldCheck, ArrowRight, CheckCircle2, Zap, Database } from 'lucide-react';
 
 function GlowingTechCore() {
@@ -106,9 +105,9 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: 'easeOut', delay: 0.1 }}
         >
-          Stop LLM Hallucinations{' '}
+          Stop Stale AI Answers{' '}
           <span className="block mt-2">
-            <span className="gradient-text">Before They Hit Production</span>
+            <span className="gradient-text">Before They Reach Production.</span>
           </span>
         </motion.h1>
 
@@ -119,7 +118,7 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: 'easeOut', delay: 0.2 }}
         >
-          {APP_CONFIG.description} Intercept outdated pricing, altered leadership, and obsolete specs in milliseconds with automated evidence retrieval.
+          FreshGuard verifies time-sensitive LLM claims using live web evidence and protects Bifrost semantic caches from outdated or contradicted responses.
         </motion.p>
 
         {/* Call to Actions */}
@@ -130,25 +129,23 @@ export function Hero() {
           transition={{ duration: 0.7, ease: 'easeOut', delay: 0.3 }}
         >
           <motion.a
-            href="#solution"
+            href="/dashboard/verify"
             className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-cyan-600 via-primary-600 to-purple-600 text-white rounded-xl font-bold text-lg shadow-xl shadow-primary-500/30 hover:shadow-primary-500/50 flex items-center justify-center gap-2 group transition-all"
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
           >
-            <span>Explore Verification Pipeline</span>
+            <span>Try Live Demo</span>
             <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </motion.a>
 
           <motion.a
-            href={APP_CONFIG.github}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/dashboard"
             className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-300 hover:border-primary-500 rounded-xl font-bold text-lg shadow-sm hover:text-primary-600 transition-all flex items-center justify-center gap-2"
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
           >
             <ShieldCheck className="h-5 w-5 text-primary-600" />
-            <span>View Source on GitHub</span>
+            <span>Explore Dashboard</span>
           </motion.a>
         </motion.div>
 

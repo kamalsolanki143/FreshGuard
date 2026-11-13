@@ -20,6 +20,7 @@
     "postcss": "^8.5.32",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-router-dom": "^7.18.5",
     "tailwindcss": "^3.4.19",
     "three": "^0.168.0"
   },

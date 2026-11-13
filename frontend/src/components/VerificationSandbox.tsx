@@ -12,7 +12,6 @@ import {
   Database,
   CheckCircle2,
   AlertCircle,
-  ChevronRight,
 } from 'lucide-react';
 
 interface EvidenceItem {
