@@ -359,5 +359,73 @@ func TestPlugin_PostLLMHook_CacheHit_Expired_EvictsAndReverifies(t *testing.T) {
 	if fg["is_fresh"] != true {
 		t.Errorf("expected is_fresh true after successful reverification, got %v", fg["is_fresh"])
 	}
+	if fg["cache_evicted"] != true {
+		t.Errorf("expected cache_evicted true in telemetry, got %v", fg["cache_evicted"])
+	}
+}
+
+func TestPlugin_PostLLMHook_CacheHit_Expired_EvictsWithoutReverification(t *testing.T) {
+	evaluator := cache.NewEvaluator(cache.NewDefaultPolicy(), cache.NewLedger(0))
+	staleTime := time.Now().UTC().Add(-48 * time.Hour) // 48h ago, expired for pricing (24h)
+	vRespOld := &client.VerificationResponse{
+		VerificationID: "ver-old",
+		RequestID:      "req-old",
+		Status:         client.StatusCompleted,
+		CheckedAt:      &staleTime,
+		Claims: []client.Claim{
+			{
+				ClaimID:   "c-old",
+				Category:  client.CategoryPricing,
+				Verdict:   client.VerdictSupported,
+				CheckedAt: staleTime,
+			},
+		},
+	}
+	evaluator.RecordVerification("stale-cache-id-2", "Pricing claim expired without reverify.", vRespOld)
+
+	evictor := &MockEvictor{}
+	cfg := DefaultPluginConfig()
+	cfg.EnableCacheEviction = true
+	cfg.ReverifyOnCacheHit = false // reverify disabled
+	p := NewPlugin(cfg, nil, evaluator, evictor)
+
+	ctx := schemas.NewBifrostContext(context.Background(), "req-no-reverify")
+	resp := &schemas.BifrostResponse{
+		ID: "resp-no-reverify",
+		Choices: []schemas.BifrostChoice{
+			{
+				Message: schemas.ChatMessage{
+					Role:    "assistant",
+					Content: "Pricing claim expired without reverify.",
+				},
+			},
+		},
+		ExtraFields: map[string]any{
+			"cache_debug": map[string]any{
+				"cache_hit": true,
+				"cache_id":  "stale-cache-id-2",
+			},
+		},
+	}
+
+	outResp, bifrostErr, err := p.PostLLMHook(ctx, resp, nil)
+	if err != nil || bifrostErr != nil {
+		t.Fatalf("unexpected hook error: %v, %v", err, bifrostErr)
+	}
+
+	if len(evictor.EvictedIDs) != 1 || evictor.EvictedIDs[0] != "stale-cache-id-2" {
+		t.Errorf("expected eviction for stale-cache-id-2, got %v", evictor.EvictedIDs)
+	}
+
+	fg := outResp.ExtraFields["freshguard"].(map[string]any)
+	if fg["status"] != "stale_cache_hit" {
+		t.Errorf("expected status stale_cache_hit, got %v", fg["status"])
+	}
+	if fg["is_fresh"] != false {
+		t.Errorf("expected is_fresh false for un-reverified stale hit, got %v", fg["is_fresh"])
+	}
+	if fg["cache_evicted"] != true {
+		t.Errorf("expected cache_evicted true in telemetry, got %v", fg["cache_evicted"])
+	}
 }
 

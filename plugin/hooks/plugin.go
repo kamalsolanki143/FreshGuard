@@ -22,6 +22,9 @@ type PluginConfig struct {
 	MaxRetries             int           `json:"max_retries"`
 	FailOpen               bool          `json:"fail_open"`
 	BifrostURL             string        `json:"bifrost_url"`
+	BifrostVirtualKey      string        `json:"bifrost_virtual_key,omitempty"`
+	BifrostAuthToken       string        `json:"bifrost_auth_token,omitempty"`
+	LedgerFilePath         string        `json:"ledger_file_path,omitempty"`
 	EnableCacheEviction    bool          `json:"enable_cache_eviction"`
 	ReverifyOnCacheHit     bool          `json:"reverify_on_cache_hit"`
 	Categories             []string      `json:"categories"`
@@ -75,10 +78,26 @@ func NewPlugin(
 		vClient = c
 	}
 	if evaluator == nil {
-		evaluator = cache.NewEvaluator(cache.NewDefaultPolicy(), cache.NewLedger(0))
+		if cfg.LedgerFilePath != "" {
+			fileLedger, err := cache.NewFileBackedLedger(cfg.LedgerFilePath, 0)
+			if err == nil {
+				evaluator = cache.NewEvaluator(cache.NewDefaultPolicy(), fileLedger)
+			} else {
+				evaluator = cache.NewEvaluator(cache.NewDefaultPolicy(), cache.NewLedger(0))
+			}
+		} else {
+			evaluator = cache.NewEvaluator(cache.NewDefaultPolicy(), cache.NewLedger(0))
+		}
 	}
 	if evictor == nil && cfg.BifrostURL != "" {
-		evictor = cache.NewBifrostEvictor(cfg.BifrostURL, nil)
+		var opts []cache.EvictorOption
+		if cfg.BifrostVirtualKey != "" {
+			opts = append(opts, cache.WithVirtualKey(cfg.BifrostVirtualKey))
+		}
+		if cfg.BifrostAuthToken != "" {
+			opts = append(opts, cache.WithAuthToken(cfg.BifrostAuthToken))
+		}
+		evictor = cache.NewBifrostEvictor(cfg.BifrostURL, nil, opts...)
 	}
 
 	return &FreshGuardPlugin{
@@ -123,9 +142,26 @@ func (p *FreshGuardPlugin) Init(rawConfig any) error {
 	}
 	p.client = c
 
-	p.evaluator = cache.NewEvaluator(cache.NewDefaultPolicy(), cache.NewLedger(0))
+	if cfg.LedgerFilePath != "" {
+		fileLedger, err := cache.NewFileBackedLedger(cfg.LedgerFilePath, 0)
+		if err == nil {
+			p.evaluator = cache.NewEvaluator(cache.NewDefaultPolicy(), fileLedger)
+		} else {
+			p.evaluator = cache.NewEvaluator(cache.NewDefaultPolicy(), cache.NewLedger(0))
+		}
+	} else {
+		p.evaluator = cache.NewEvaluator(cache.NewDefaultPolicy(), cache.NewLedger(0))
+	}
+
 	if cfg.BifrostURL != "" {
-		p.evictor = cache.NewBifrostEvictor(cfg.BifrostURL, nil)
+		var opts []cache.EvictorOption
+		if cfg.BifrostVirtualKey != "" {
+			opts = append(opts, cache.WithVirtualKey(cfg.BifrostVirtualKey))
+		}
+		if cfg.BifrostAuthToken != "" {
+			opts = append(opts, cache.WithAuthToken(cfg.BifrostAuthToken))
+		}
+		p.evictor = cache.NewBifrostEvictor(cfg.BifrostURL, nil, opts...)
 	}
 
 	return nil
@@ -211,9 +247,15 @@ func (p *FreshGuardPlugin) PostLLMHook(
 
 		// STALE, EXPIRED, OR MISSING METADATA:
 		// Rule: Expired or missing metadata requires re-verification. Cache hit cannot silently inherit expired verdict.
+		var evicted bool
+		var evictErr string
 		if p.config.EnableCacheEviction && evalRes.ShouldEvict && p.evictor != nil && cacheID != "" {
 			// Trigger eviction of stale entry in Bifrost semantic cache
-			_ = p.evictor.EvictByCacheID(ctx.Ctx, cacheID)
+			if err := p.evictor.EvictByCacheID(ctx.Ctx, cacheID); err != nil {
+				evictErr = err.Error()
+			} else {
+				evicted = true
+			}
 		}
 
 		if p.config.ReverifyOnCacheHit {
@@ -229,12 +271,16 @@ func (p *FreshGuardPlugin) PostLLMHook(
 				// evict immediately from Bifrost's semantic cache.
 				if (vResp.RequiresRefresh || (vResp.FreshnessStatus != nil && *vResp.FreshnessStatus == "STALE")) &&
 					p.config.EnableCacheEviction && p.evictor != nil && cacheID != "" {
-					_ = p.evictor.EvictByCacheID(ctx.Ctx, cacheID)
+					if err := p.evictor.EvictByCacheID(ctx.Ctx, cacheID); err != nil {
+						evictErr = err.Error()
+					} else {
+						evicted = true
+					}
 				}
 
 				// Successfully re-verified! Update ledger
 				newMeta := p.evaluator.RecordVerification(cacheID, responseText, vResp)
-				resp.ExtraFields["freshguard"] = map[string]any{
+				fgMeta := map[string]any{
 					"status":                  "reverified",
 					"is_fresh":                !vResp.RequiresRefresh,
 					"reverification_required": vResp.RequiresRefresh,
@@ -243,24 +289,34 @@ func (p *FreshGuardPlugin) PostLLMHook(
 					"claims_checked":          vResp.ClaimsChecked,
 					"processing_time_ms":      vResp.ProcessingTimeMs,
 					"cache_id":                cacheID,
+					"cache_evicted":           evicted,
 					"verification_id":         vResp.VerificationID,
 					"checked_at":              newMeta.CheckedAt,
 					"expires_at":              newMeta.ExpiresAt,
 					"claims":                  newMeta.Claims,
 				}
+				if evictErr != "" {
+					fgMeta["cache_eviction_error"] = evictErr
+				}
+				resp.ExtraFields["freshguard"] = fgMeta
 				return resp, nil, nil
 			}
 		}
 
 		// Re-verification was not attempted, or failed: mark explicitly unverified/stale
-		resp.ExtraFields["freshguard"] = map[string]any{
+		fgMeta := map[string]any{
 			"status":                  "stale_cache_hit",
 			"is_fresh":                false,
 			"reverification_required": true,
 			"reason":                  evalRes.Reason,
 			"cache_id":                cacheID,
+			"cache_evicted":           evicted,
 			"verdict":                 evalRes.Verdict,
 		}
+		if evictErr != "" {
+			fgMeta["cache_eviction_error"] = evictErr
+		}
+		resp.ExtraFields["freshguard"] = fgMeta
 		return resp, nil, nil
 	}
 
