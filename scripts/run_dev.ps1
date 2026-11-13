@@ -1,4 +1,4 @@
-﻿# FreshGuard Local Multi-Service Runner (PowerShell)
+# FreshGuard Local Multi-Service Runner (PowerShell)
 param (
     [switch]$NoFrontend,
     [switch]$WithBifrost,
@@ -57,3 +57,4 @@ foreach ($p in $processes) {
     } catch {}
 }
 Write-Host "✓ All FreshGuard services stopped." -ForegroundColor Green
+
