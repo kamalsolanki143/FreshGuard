@@ -1,5 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { copyFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -7,9 +9,33 @@ export default defineConfig(({ mode }) => {
   const apiKey = env.VERIFICATION_SERVICE_API_KEY || process.env.VERIFICATION_SERVICE_API_KEY;
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      {
+        name: 'copy-404-for-spa',
+        closeBundle() {
+          const indexPath = resolve(__dirname, 'dist', 'index.html');
+          const notFoundPath = resolve(__dirname, 'dist', '404.html');
+          if (existsSync(indexPath)) {
+            copyFileSync(indexPath, notFoundPath);
+          }
+        },
+      },
+    ],
     server: {
       port: 3000,
+      open: false,
+      proxy: {
+        '/api': {
+          target: backendTarget,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+          headers: apiKey ? { 'X-API-Key': apiKey } : {},
+        },
+      },
+    },
+    preview: {
+      port: 4173,
       open: false,
       proxy: {
         '/api': {

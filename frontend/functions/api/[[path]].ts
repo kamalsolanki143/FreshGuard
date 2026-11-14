@@ -86,8 +86,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     );
   }
 
-  // 3. Resolve upstream backend URL
-  const backendBase = (env.BACKEND_API_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+  // 3. Resolve upstream backend URL (defaults to production Render service if unset)
+  const backendBase = (env.BACKEND_API_URL || 'https://freshguard-verification.onrender.com').replace(/\/+$/, '');
   const targetUrl = `${backendBase}${normalizedPath}`;
 
   // 4. Sanitize and build forwarding headers
