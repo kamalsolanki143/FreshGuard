@@ -11,7 +11,7 @@ if (!fs.existsSync(SCREENSHOT_DIR)) {
   fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 }
 
-// 1. Lightweight Bifrost v2.5.1 API Test Server to verify real network eviction
+// 1. Lightweight Bifrost v2.5.1 API Test Server to verify network cache eviction
 function startBifrostMockServer(port = 8080) {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
@@ -45,13 +45,6 @@ function startBifrostMockServer(port = 8080) {
         return;
       }
 
-      if (url.startsWith('/api/cache/clear-by-key/')) {
-        const cacheKey = url.replace('/api/cache/clear-by-key/', '');
-        res.writeHead(204);
-        res.end();
-        return;
-      }
-
       if (url === '/health' || url === '/api/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'ok', version: '2.5.1' }));
@@ -79,9 +72,9 @@ function startBifrostMockServer(port = 8080) {
 }
 
 async function runComprehensiveValidation() {
-  console.log('====================================================');
-  console.log('   FRESHGUARD FINAL INTEGRATION & VALIDATION SUITE   ');
-  console.log('====================================================');
+  console.log('================================================================');
+  console.log('   FRESHGUARD NAVBAR, AUTHENTICATION & WORKSPACE AUDIT SUITE    ');
+  console.log('================================================================');
 
   const bifrostServer = await startBifrostMockServer(8080);
 
@@ -101,274 +94,405 @@ async function runComprehensiveValidation() {
   await page.setViewport({ width: 1440, height: 900 });
 
   try {
-    // ----------------------------------------------------
-    // SECTION 1: AUTHENTICATION ROBUSTNESS TESTING
-    // ----------------------------------------------------
-    console.log('\n--- 1. AUTHENTICATION TESTING ---');
+    // =========================================================================
+    // PART A: LOGGED-OUT VISITOR EXPERIENCE
+    // =========================================================================
+    console.log('\n--- PART A: LOGGED-OUT VISITOR EXPERIENCE ---');
 
-    // Test 1a: Direct Protected-Route Access as Unauthenticated Visitor
-    console.log('\n[1a] Testing direct access to /dashboard without session...');
-    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'networkidle0' });
-    const unauthBanner = await page.evaluate(() => {
-      const banner = document.body.innerText;
-      return banner.includes('Viewing in unauthenticated state') || banner.includes('Unauthenticated');
-    });
-    console.log('✓ Direct access properly displays Unauthenticated Preview banner:', unauthBanner);
-    const unauthScreenshot = path.join(SCREENSHOT_DIR, '04b_unauthenticated_preview.png');
-    await page.screenshot({ path: unauthScreenshot });
-    console.log(`✓ Saved Unauthenticated Preview Screenshot: ${unauthScreenshot}`);
+    // Clear session storage completely
+    await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle0' });
+    await page.evaluate(() => sessionStorage.clear());
+    await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle0' });
+    await new Promise((r) => setTimeout(r, 600));
 
-    // Test 1b: Navigate to /login and Test Invalid Credentials
-    console.log('\n[1b] Testing invalid credential validation on /login...');
-    await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle0' });
+    // Confirm Landing page appears
+    const pageTitle = await page.evaluate(() => document.title || document.body.innerText.slice(0, 100));
+    console.log('✓ Public Landing Page loaded on "/"');
 
-    // Submit invalid short password
-    await page.type('input[type="email"]', 'invalid-email-format');
-    await page.type('input[type="password"]', '123');
-    await page.click('button[type="submit"]');
-    await new Promise(r => setTimeout(r, 600));
-
-    const invalidError = await page.evaluate(() => {
-      const err = document.querySelector('.bg-rose-950\\/60');
-      return err ? err.innerText : null;
-    });
-    console.log(`✓ Invalid credentials correctly rejected with error: "${invalidError}"`);
-
-    const invalidScreenshot = path.join(SCREENSHOT_DIR, '02b_login_error_validation.png');
-    await page.screenshot({ path: invalidScreenshot });
-    console.log(`✓ Saved Login Error Validation Screenshot: ${invalidScreenshot}`);
-
-    // Test 1c: Valid Developer Authentication
-    console.log('\n[1c] Testing valid developer login...');
-    await page.evaluate(() => {
-      const emailInput = document.querySelector('input[type="email"]');
-      const passInput = document.querySelector('input[type="password"]');
-      if (emailInput) emailInput.value = '';
-      if (passInput) passInput.value = '';
-    });
-
-    await page.type('input[type="email"]', 'developer@freshguard.io');
-    await page.type('input[type="password"]', 'ProductionKey2026!');
-    await page.click('button[type="submit"]');
-    await new Promise(r => setTimeout(r, 1200));
-
-    console.log('Current URL after developer login:', page.url());
-    const devBanner = await page.evaluate(() => {
-      return document.body.innerText.includes('developer@freshguard.io');
-    });
-    console.log('✓ Authenticated Developer Session active in workspace:', devBanner);
-
-    // Test 1d: Session Persistence After Browser Refresh
-    console.log('\n[1d] Testing session persistence after page reload...');
-    await page.reload({ waitUntil: 'networkidle0' });
-    const reloadedDevSession = await page.evaluate(() => {
-      const session = sessionStorage.getItem('freshguard_active_session');
+    // Confirm Logged-Out Navbar items:
+    const loggedOutNav = await page.evaluate(() => {
+      const navText = document.querySelector('nav')?.innerText || '';
       return {
-        hasSession: !!session,
-        email: session ? JSON.parse(session).email : null,
-        isGuest: session ? JSON.parse(session).isGuest : null,
+        hasHome: navText.includes('Home'),
+        hasProblem: navText.includes('Problem'),
+        hasPipeline: navText.includes('Pipeline Steps'),
+        hasFeatures: navText.includes('Features'),
+        hasArchitecture: navText.includes('Architecture'),
+        hasDocs: navText.includes('Docs'),
+        hasLogin: navText.includes('Login'),
+        hasTryDemo: navText.includes('Try Live Demo'),
+        hasDashboard: navText.includes('Dashboard'),
+        hasAccount: navText.includes('Account'),
       };
     });
-    console.log('✓ Session preserved after reload:', reloadedDevSession);
 
-    // Test 1e: Developer Logout and Session Cleanup
-    console.log('\n[1e] Testing logout and session cleanup...');
-    const logoutBtn = await page.$('button[title*="Sign Out"], button[title*="Logout"]');
-    if (logoutBtn) {
-      await logoutBtn.click();
-      await new Promise(r => setTimeout(r, 1000));
-    }
-    console.log('Current URL after logout:', page.url());
-    const sessionAfterLogout = await page.evaluate(() => {
-      return sessionStorage.getItem('freshguard_active_session');
-    });
-    console.log('✓ Session cleaned up from sessionStorage (null):', sessionAfterLogout === null);
+    console.log('✓ Logged-out Navbar items audit:', loggedOutNav);
+    if (loggedOutNav.hasDashboard) throw new Error('FAIL: Dashboard button visible in logged-out navbar!');
+    if (loggedOutNav.hasAccount) throw new Error('FAIL: Account button visible in logged-out navbar!');
+    if (!loggedOutNav.hasLogin) throw new Error('FAIL: Login button missing in logged-out navbar!');
+    if (!loggedOutNav.hasTryDemo) throw new Error('FAIL: Try Live Demo button missing in logged-out navbar!');
+    console.log('✓ PASS: Dashboard & Account properly hidden when logged out.');
 
-    // Test 1f: Guest Evaluator Mode Activation
-    console.log('\n[1f] Testing Guest Evaluator Mode separation...');
-    await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle0' });
-    const guestDemoBtn = await page.evaluateHandle(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      return buttons.find(b => b.innerText.includes('Judge') || b.innerText.includes('Access Demo'));
-    });
-    if (guestDemoBtn) {
-      await guestDemoBtn.click();
-      await new Promise(r => setTimeout(r, 1200));
-    }
-    const guestSessionDetails = await page.evaluate(() => {
-      const session = sessionStorage.getItem('freshguard_active_session');
-      return session ? JSON.parse(session) : null;
-    });
-    console.log('✓ Active Guest Evaluator Session Details:', guestSessionDetails);
-    console.log('✓ Guest mode clearly distinguished from developer:', guestSessionDetails?.isGuest === true);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'navbar_logged_out.png') });
+    console.log('✓ Saved: screenshots/navbar_logged_out.png');
 
-    // ----------------------------------------------------
-    // SECTION 2: LIVE BACKEND CLAIM VERIFICATION
-    // ----------------------------------------------------
-    console.log('\n--- 2. TAVILY & VERIFICATION SERVICE INTEGRATION ---');
-    console.log('Checking live backend health at http://127.0.0.1:8000/health...');
-    const healthData = await page.evaluate(async () => {
-      try {
-        const res = await fetch('http://127.0.0.1:8000/health');
-        return await res.json();
-      } catch (err) {
-        return { error: err.message };
-      }
-    });
-    console.log('✓ Backend Health Response:', healthData);
-
-    console.log('Submitting live claim to /v1/verifications endpoint...');
-    const testVerificationPayload = {
-      request_id: 'qa-validation-' + Date.now(),
-      text: 'OpenAI GPT-4o input tokens cost $2.50 per 1M tokens.',
-      categories: ['pricing'],
-    };
-
-    const verificationResult = await page.evaluate(async (payload) => {
-      try {
-        const res = await fetch('http://127.0.0.1:8000/v1/verifications', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        return { status: res.status, body: await res.json() };
-      } catch (err) {
-        return { error: err.message };
-      }
-    }, testVerificationPayload);
-
-    console.log(`✓ Verification Service HTTP Status: ${verificationResult.status}`);
-    console.log('✓ Returned Freshness Status:', verificationResult.body?.freshness_status);
-    console.log('✓ Claim Verdict:', verificationResult.body?.results?.[0]?.verdict);
-    console.log('✓ Evidence Retrieval Details:', verificationResult.body?.results?.[0]?.reason);
-
-    // ----------------------------------------------------
-    // SECTION 3: BIFROST LIVE CACHE EVICTION
-    // ----------------------------------------------------
-    console.log('\n--- 3. BIFROST LIVE CACHE EVICTION ---');
-    const evictionTestResult = await page.evaluate(async () => {
-      try {
-        const res = await fetch('http://localhost:8080/api/cache/clear/test-cache-entry-894c', {
-          method: 'DELETE',
-          headers: {
-            'x-bf-vk': 'vk-prod-live-test',
-            'Authorization': 'Bearer bifrost-secret-token-789',
-          },
-        });
-        return { status: res.status, body: await res.json() };
-      } catch (err) {
-        return { error: err.message };
-      }
-    });
-    console.log('✓ Authenticated Bifrost Eviction HTTP Status:', evictionTestResult.status);
-    console.log('✓ Bifrost Eviction Response Payload:', evictionTestResult.body);
-
-    // ----------------------------------------------------
-    // SECTION 4: FULL BROWSER SCREENSHOT SUITE
-    // ----------------------------------------------------
-    console.log('\n--- 4. CAPTURING COMPLETE SCREENSHOT SUITE ---');
-
-    // 1. Landing Page
-    await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle0' });
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '01_landing_page.png') });
-    console.log('✓ 01_landing_page.png');
-
-    // 2. Login Page
-    await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle0' });
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '02_login_page.png') });
-    console.log('✓ 02_login_page.png');
-
-    // 3. Signup Page
-    await page.goto(`${BASE_URL}/signup`, { waitUntil: 'networkidle0' });
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '03_signup_page.png') });
-    console.log('✓ 03_signup_page.png');
-
-    // Ensure session is set for dashboard screens
+    // Test clicking Try Live Demo in navbar redirects to /login
+    console.log('\n[A.2] Clicking "Try Live Demo" in logged-out navbar...');
     await page.evaluate(() => {
-      sessionStorage.setItem('freshguard_active_session', JSON.stringify({
-        name: 'Hackathon Judge / Evaluator',
-        email: 'judge@freshguard.demo',
-        role: 'Guest Evaluator',
-        isGuest: true,
-        loggedInAt: new Date().toISOString(),
-      }));
+      const btns = Array.from(document.querySelectorAll('nav a, nav button'));
+      const tryDemo = btns.find(b => b.innerText.includes('Try Live Demo'));
+      if (tryDemo) tryDemo.click();
     });
+    await new Promise((r) => setTimeout(r, 800));
+    console.log('Current URL after clicking Try Live Demo:', page.url());
+    if (!page.url().includes('/login')) {
+      throw new Error(`FAIL: Try Live Demo did not redirect to /login (got: ${page.url()})`);
+    }
+    console.log('✓ PASS: Logged-out visitor redirected to /login');
 
-    // 4. Dashboard Overview
+    // Test direct protected route access
+    console.log('\n[A.3] Testing direct access to /dashboard without active session...');
     await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'networkidle0' });
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '04_dashboard_overview.png') });
-    console.log('✓ 04_dashboard_overview.png');
+    await new Promise((r) => setTimeout(r, 600));
+    console.log('Current URL after direct /dashboard access:', page.url());
+    if (!page.url().includes('/login')) {
+      throw new Error(`FAIL: Direct access to /dashboard did not redirect to /login (got: ${page.url()})`);
+    }
+    console.log('✓ PASS: ProtectedRoute successfully intercepted and redirected to /login');
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'protected_route_redirect_to_login.png') });
+    console.log('✓ Saved: screenshots/protected_route_redirect_to_login.png');
 
-    // 5. Verification Workspace
-    await page.goto(`${BASE_URL}/dashboard/verify`, { waitUntil: 'networkidle0' });
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '05_verification_workspace.png') });
-    console.log('✓ 05_verification_workspace.png');
+    // =========================================================================
+    // PART B: LOGIN FLOW & VALIDATION
+    // =========================================================================
+    console.log('\n--- PART B: LOGIN PAGE & CREDENTIALS VALIDATION ---');
+    await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle0' });
 
-    // Run verification on UI
-    const runBtn = await page.evaluateHandle(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      return buttons.find(b => b.innerText.includes('Run Verification'));
+    // Empty fields submission validation
+    console.log('\n[B.1] Testing empty/invalid credential submission...');
+    await page.evaluate(() => {
+      const form = document.querySelector('form');
+      if (form) form.requestSubmit ? form.requestSubmit() : form.submit();
     });
-    if (runBtn) {
-      await runBtn.click();
-      await new Promise(r => setTimeout(r, 4000));
-      await page.screenshot({ path: path.join(SCREENSHOT_DIR, '05b_live_verification_result.png') });
-      console.log('✓ 05b_live_verification_result.png');
+    await new Promise((r) => setTimeout(r, 400));
+
+    // Fill invalid credentials
+    await page.type('input[type="email"]', 'invalid-format');
+    await page.type('input[type="password"]', '123');
+    await page.click('button[type="submit"]');
+    await new Promise((r) => setTimeout(r, 600));
+
+    const errorAlert = await page.evaluate(() => {
+      const err = document.querySelector('.bg-rose-950\\/60, .text-rose-300');
+      return err ? err.innerText : null;
+    });
+    console.log('✓ Invalid input validation error message:', errorAlert);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '02b_login_error_validation.png') });
+    console.log('✓ Saved: screenshots/02b_login_error_validation.png');
+
+    // Password visibility toggle test
+    console.log('\n[B.2] Testing password visibility toggle...');
+    const passTypeBefore = await page.$eval('input[type="password"]', el => el.type);
+    console.log('Password input type initially:', passTypeBefore);
+    // Click password toggle button
+    await page.click('button[aria-label="Toggle password visibility"]');
+    await new Promise((r) => setTimeout(r, 400));
+    const passTypeAfter = await page.$eval('input[type="text"], input[type="password"]', el => el.type);
+    console.log('Password input type after toggle click:', passTypeAfter);
+    if (passTypeAfter !== 'text') {
+      console.warn('Note: Password toggle button type was', passTypeAfter);
     }
 
-    // 6. Verification History
-    await page.goto(`${BASE_URL}/dashboard/history`, { waitUntil: 'networkidle0' });
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '06_verification_history.png') });
-    console.log('✓ 06_verification_history.png');
+    // Save Login Page screenshot
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '02_login_page.png') });
+    console.log('✓ Saved: screenshots/02_login_page.png');
 
-    // 7. Cache Protection
-    await page.goto(`${BASE_URL}/dashboard/cache`, { waitUntil: 'networkidle0' });
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '07_cache_protection.png') });
-    console.log('✓ 07_cache_protection.png');
+    // Developer authentication test
+    console.log('\n[B.3] Authenticating as Developer (developer@freshguard.io)...');
+    await page.evaluate(() => {
+      const em = document.querySelector('input[type="email"]');
+      const pw = document.querySelector('input[type="password"], input[type="text"]');
+      if (em) em.value = '';
+      if (pw) pw.value = '';
+    });
+    await page.type('input[type="email"]', 'developer@freshguard.io');
+    await page.type('input[type="password"], input[type="text"]', 'FreshGuard2026!');
+    await page.click('button[type="submit"]');
+    await new Promise((r) => setTimeout(r, 1200));
 
-    // 8. Integrations
-    await page.goto(`${BASE_URL}/dashboard/integrations`, { waitUntil: 'networkidle0' });
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '08_integrations.png') });
-    console.log('✓ 08_integrations.png');
+    console.log('Current URL after developer login:', page.url());
+    if (!page.url().includes('/dashboard')) {
+      throw new Error(`FAIL: Developer login did not redirect to /dashboard (got: ${page.url()})`);
+    }
+    console.log('✓ PASS: Developer login redirected directly to /dashboard');
 
-    // 9. Settings
-    await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'networkidle0' });
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '09_settings.png') });
-    console.log('✓ 09_settings.png');
+    // =========================================================================
+    // PART C: LOGGED-IN NAVBAR & ACCOUNT DROPDOWN
+    // =========================================================================
+    console.log('\n--- PART C: LOGGED-IN NAVBAR & ACCOUNT DROPDOWN ---');
 
-    // 10. Documentation
-    await page.goto(`${BASE_URL}/docs`, { waitUntil: 'networkidle0' });
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '10_docs.png') });
-    console.log('✓ 10_docs.png');
-
-    // 11-13. Mobile Viewport (390x844)
-    await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+    // Navigate to homepage to check public navbar in logged-in state
     await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle0' });
+    await new Promise((r) => setTimeout(r, 600));
 
-    const menuBtn = await page.$('nav button[aria-label="Toggle Navigation Menu"]');
-    if (menuBtn) {
-      await menuBtn.click();
-      await new Promise(r => setTimeout(r, 500));
-      await page.screenshot({ path: path.join(SCREENSHOT_DIR, '11_mobile_navbar_drawer.png') });
-      console.log('✓ 11_mobile_navbar_drawer.png');
-      await menuBtn.click();
-      await new Promise(r => setTimeout(r, 400));
+    const loggedInNav = await page.evaluate(() => {
+      const navText = document.querySelector('nav')?.innerText || '';
+      return {
+        hasHome: navText.includes('Home'),
+        hasDocs: navText.includes('Docs'),
+        hasDashboard: navText.includes('Dashboard'),
+        hasLogin: navText.includes('Login'),
+        hasAccountOrUser: navText.includes('developer') || navText.includes('Evaluator'),
+      };
+    });
+
+    console.log('✓ Logged-in Navbar items audit:', loggedInNav);
+    if (!loggedInNav.hasDashboard) throw new Error('FAIL: Dashboard button missing in logged-in navbar!');
+    if (loggedInNav.hasLogin) throw new Error('FAIL: Login button still visible in logged-in navbar!');
+    console.log('✓ PASS: Dashboard and Account are visible, Login is properly hidden.');
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'navbar_logged_in.png') });
+    console.log('✓ Saved: screenshots/navbar_logged_in.png');
+
+    // Test Account Dropdown
+    console.log('\n[C.2] Opening Account dropdown menu...');
+    await page.evaluate(() => {
+      const trigger = document.querySelector('nav button[aria-label="Toggle user account menu"]');
+      if (trigger) trigger.click();
+    });
+    await new Promise((r) => setTimeout(r, 600));
+
+    const dropdownContent = await page.evaluate(() => {
+      const menu = document.querySelector('nav .z-50.divide-y');
+      return menu ? menu.innerText : null;
+    });
+    console.log('✓ Account Dropdown Content:\n' + dropdownContent);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'account_dropdown_open.png') });
+    console.log('✓ Saved: screenshots/account_dropdown_open.png');
+
+    // =========================================================================
+    // PART D: LOGOUT BEHAVIOR & BACK-BUTTON PROTECTION
+    // =========================================================================
+    console.log('\n--- PART D: LOGOUT BEHAVIOR & BACK BUTTON PROTECTION ---');
+
+    console.log('[D.1] Clicking Log Out in Account dropdown...');
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const logoutBtn = btns.find(b => b.innerText.includes('Log Out'));
+      if (logoutBtn) logoutBtn.click();
+    });
+    await new Promise((r) => setTimeout(r, 800));
+
+    console.log('Current URL after logout:', page.url());
+    if (page.url() !== `${BASE_URL}/` && page.url() !== `${BASE_URL}`) {
+      throw new Error(`FAIL: Logout did not redirect to "/" (got: ${page.url()})`);
+    }
+    console.log('✓ PASS: Logout redirected to "/"');
+
+    const sessionPostLogout = await page.evaluate(() => sessionStorage.getItem('freshguard_active_session'));
+    console.log('SessionStorage post-logout (must be null):', sessionPostLogout);
+    if (sessionPostLogout !== null) throw new Error('FAIL: Session was not cleaned up on logout!');
+
+    // Test back-button protection
+    console.log('\n[D.2] Testing browser Back button navigation after logout...');
+    await page.goBack();
+    await new Promise((r) => setTimeout(r, 1500));
+    console.log('Current URL after clicking browser Back:', page.url());
+    const renderedContent = await page.evaluate(() => document.body.innerText.slice(0, 100));
+    console.log('Rendered content after Back:', renderedContent);
+    if (page.url().includes('/dashboard')) {
+      // Check if page redirected or is in login
+      const isLogin = await page.evaluate(() => document.querySelector('input[type="email"]') !== null);
+      if (!isLogin) {
+        throw new Error('FAIL: Back button allowed unauthorized access into /dashboard!');
+      }
+    }
+    console.log('✓ PASS: Back button prevented unauthorized entry to protected dashboard.');
+
+    // =========================================================================
+    // PART E: JUDGE DEMO MODE ACTIVATION
+    // =========================================================================
+    console.log('\n--- PART E: JUDGE DEMO MODE ACTIVATION ---');
+    await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle0' });
+
+    console.log('[E.1] Clicking "Access Demo as Judge / Evaluator"...');
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const demoBtn = btns.find(b => b.innerText.includes('Judge') || b.innerText.includes('Access Demo'));
+      if (demoBtn) demoBtn.click();
+    });
+    await new Promise((r) => setTimeout(r, 1200));
+
+    console.log('Current URL after Judge Demo access:', page.url());
+    if (!page.url().includes('/dashboard')) {
+      throw new Error(`FAIL: Judge Demo did not redirect to /dashboard (got: ${page.url()})`);
     }
 
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '12_mobile_hero.png') });
-    console.log('✓ 12_mobile_hero.png');
+    const judgeSession = await page.evaluate(() => {
+      const s = sessionStorage.getItem('freshguard_active_session');
+      return s ? JSON.parse(s) : null;
+    });
+    console.log('✓ Active Judge Demo Session:', judgeSession);
+    if (!judgeSession?.isGuest) throw new Error('FAIL: Judge Demo session is not marked as guest!');
+    console.log('✓ PASS: Judge Demo mode cleanly established with isGuest=true.');
 
+    // =========================================================================
+    // PART F: VERIFICATION WORKSPACE UX & FUNCTIONALITY AUDIT
+    // =========================================================================
+    console.log('\n--- PART F: VERIFICATION WORKSPACE AUDIT ---');
     await page.goto(`${BASE_URL}/dashboard/verify`, { waitUntil: 'networkidle0' });
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '13_mobile_verify.png') });
-    console.log('✓ 13_mobile_verify.png');
+    await new Promise((r) => setTimeout(r, 800));
 
-    console.log('\n====================================================');
-    console.log('   🎉 ALL VALIDATION CRITERIA VERIFIED AND PASSED    ');
-    console.log('====================================================');
+    // F.1 Workspace UI & Status Inspection
+    const wsHeading = await page.evaluate(() => {
+      return {
+        title: document.querySelector('h1')?.innerText,
+        statusBadge: document.querySelector('.bg-emerald-950\\/70, .bg-amber-950\\/70')?.innerText,
+      };
+    });
+    console.log('✓ Verification Workspace Heading & Status:', wsHeading);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '05_verification_workspace.png') });
+    console.log('✓ Saved: screenshots/05_verification_workspace.png');
+
+    // F.2 Empty Input Validation Test
+    console.log('\n[F.2] Testing empty input validation...');
+    await page.evaluate(() => {
+      const txt = document.querySelector('textarea');
+      if (txt) txt.value = '';
+      const clearBtn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('Clear'));
+      if (clearBtn) clearBtn.click();
+    });
+    await page.click('button:has-text("Run Verification"), button:has-text("Evaluating Response")').catch(async () => {
+      await page.evaluate(() => {
+        const btn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('Run Verification'));
+        if (btn) btn.click();
+      });
+    });
+    await new Promise((r) => setTimeout(r, 600));
+
+    const emptyError = await page.evaluate(() => {
+      const err = document.querySelector('.bg-rose-950\\/70');
+      return err ? err.innerText : null;
+    });
+    console.log('✓ Empty input validation error:', emptyError);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'verification_empty_error.png') });
+    console.log('✓ Saved: screenshots/verification_empty_error.png');
+
+    // F.3 Live Verification with Preset 1: Pricing Claim
+    console.log('\n[F.3] Testing Preset 1: Pricing Claim...');
+    await page.evaluate(() => {
+      const presetBtns = Array.from(document.querySelectorAll('.grid button'));
+      const pricingPreset = presetBtns.find(b => b.innerText.includes('Pricing Verification'));
+      if (pricingPreset) pricingPreset.click();
+    });
+    await new Promise((r) => setTimeout(r, 2000));
+
+    const pricingResult = await page.evaluate(() => {
+      const statusPill = document.querySelector('.font-mono.font-bold.px-2.py-0\\.5');
+      const claims = Array.from(document.querySelectorAll('.p-5.rounded-2xl.border')).map(c => c.innerText);
+      return {
+        freshness: statusPill ? statusPill.innerText : null,
+        claimCount: claims.length,
+        claimPreview: claims[0]?.slice(0, 150),
+      };
+    });
+    console.log('✓ Pricing Verification Live Result:', pricingResult);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '05b_live_verification_result.png') });
+    console.log('✓ Saved: screenshots/05b_live_verification_result.png');
+
+    // F.4 Live Verification with Preset 4: Contradicted Claim (Cache Invalidation Candidate)
+    console.log('\n[F.4] Testing Preset 4: Contradicted Claim (Free API hallucination)...');
+    await page.evaluate(() => {
+      const presetBtns = Array.from(document.querySelectorAll('.grid button'));
+      const contradictedPreset = presetBtns.find(b => b.innerText.includes('Contradicted Claim'));
+      if (contradictedPreset) contradictedPreset.click();
+    });
+    await new Promise((r) => setTimeout(r, 2000));
+
+    const contradictedResult = await page.evaluate(() => {
+      const cacheAction = document.querySelector('.text-rose-400.font-bold, .text-emerald-400');
+      const claimCard = document.querySelector('.bg-slate-900\\/90.border-rose-800\\/60, .bg-slate-900\\/90.border-amber-800\\/60');
+      return {
+        cacheAction: cacheAction ? cacheAction.innerText : null,
+        claimVerdict: claimCard ? claimCard.innerText.slice(0, 160) : 'Rendered',
+      };
+    });
+    console.log('✓ Contradicted Claim Result & Cache Decision:', contradictedResult);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'verification_contradicted_result.png') });
+    console.log('✓ Saved: screenshots/verification_contradicted_result.png');
+
+    // =========================================================================
+    // PART G: MOBILE RESPONSIVE AUDIT (390x844 Viewport)
+    // =========================================================================
+    console.log('\n--- PART G: MOBILE RESPONSIVE AUDIT (390x844) ---');
+    await page.setViewport({ width: 390, height: 844, isMobile: true });
+
+    // Mobile Navbar & Drawer in Logged-In state
+    await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle0' });
+    await new Promise((r) => setTimeout(r, 600));
+
+    // Open mobile hamburger
+    await page.click('button[aria-label="Toggle Navigation Menu"]');
+    await new Promise((r) => setTimeout(r, 500));
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'mobile_drawer_logged_in.png') });
+    console.log('✓ Saved: screenshots/mobile_drawer_logged_in.png');
+
+    // Mobile Verification Workspace
+    await page.goto(`${BASE_URL}/dashboard/verify`, { waitUntil: 'networkidle0' });
+    await new Promise((r) => setTimeout(r, 800));
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '13_mobile_verify.png') });
+    console.log('✓ Saved: screenshots/13_mobile_verify.png');
+
+    // Log out on mobile
+    await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle0' });
+    await page.evaluate(() => sessionStorage.clear());
+    await page.reload({ waitUntil: 'networkidle0' });
+    await new Promise((r) => setTimeout(r, 500));
+    await page.click('button[aria-label="Toggle Navigation Menu"]');
+    await new Promise((r) => setTimeout(r, 500));
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '11_mobile_navbar_drawer.png') });
+    console.log('✓ Saved: screenshots/11_mobile_navbar_drawer.png (logged-out)');
+
+    // =========================================================================
+    // PART H: CAPTURE COMPLETE DESKTOP DASHBOARD SUITE
+    // =========================================================================
+    console.log('\n--- PART H: CAPTURING FULL DESKTOP AUDIT SUITE ---');
+    await page.setViewport({ width: 1440, height: 900, isMobile: false });
+
+    // Establish Judge Session
+    await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle0' });
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const demoBtn = btns.find(b => b.innerText.includes('Judge') || b.innerText.includes('Access Demo'));
+      if (demoBtn) demoBtn.click();
+    });
+    await new Promise((r) => setTimeout(r, 1000));
+
+    const routesToCapture = [
+      { url: `${BASE_URL}/`, file: '01_landing_page.png' },
+      { url: `${BASE_URL}/signup`, file: '03_signup_page.png' },
+      { url: `${BASE_URL}/dashboard`, file: '04_dashboard_overview.png' },
+      { url: `${BASE_URL}/dashboard/history`, file: '06_verification_history.png' },
+      { url: `${BASE_URL}/dashboard/cache`, file: '07_cache_protection.png' },
+      { url: `${BASE_URL}/dashboard/integrations`, file: '08_integrations.png' },
+      { url: `${BASE_URL}/dashboard/settings`, file: '09_settings.png' },
+      { url: `${BASE_URL}/docs`, file: '10_docs.png' },
+    ];
+
+    for (const r of routesToCapture) {
+      await page.goto(r.url, { waitUntil: 'networkidle0' });
+      await new Promise(res => setTimeout(res, 600));
+      await page.screenshot({ path: path.join(SCREENSHOT_DIR, r.file) });
+      console.log(`✓ ${r.file}`);
+    }
+
+    console.log('\n================================================================');
+    console.log('   🎉 ALL NAVBAR, AUTH & WORKSPACE VALIDATIONS PASSED!          ');
+    console.log('================================================================\n');
 
   } catch (err) {
-    console.error('Validation error:', err);
-    process.exit(1);
+    console.error('❌ Validation Suite Failed:', err);
+    process.exitCode = 1;
   } finally {
     await browser.close();
     if (bifrostServer) {

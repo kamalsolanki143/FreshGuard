@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Shield, Eye, EyeOff, Sparkles, ArrowRight, Lock, Mail, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../lib/authContext';
 
@@ -11,7 +11,22 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
-  const { login, loginAsGuest } = useAuth();
+  const location = useLocation();
+  const { user, login, loginAsGuest } = useAuth();
+
+  // Determine safe redirect destination (prevent redirect loops)
+  const fromPath = (location.state as any)?.from?.pathname;
+  const redirectTarget =
+    fromPath && typeof fromPath === 'string' && fromPath.startsWith('/') && !fromPath.startsWith('/login')
+      ? fromPath
+      : '/dashboard';
+
+  // If already authenticated, redirect straight to dashboard
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +36,7 @@ export function LoginPage() {
     try {
       const res = await login(email, password);
       if (res.success) {
-        navigate('/dashboard');
+        navigate(redirectTarget, { replace: true });
       } else {
         setError(res.error || 'Authentication failed. Please verify credentials.');
       }
@@ -34,7 +49,7 @@ export function LoginPage() {
 
   const handleGuestDemo = () => {
     loginAsGuest();
-    navigate('/dashboard/verify');
+    navigate(redirectTarget, { replace: true });
   };
 
   return (
@@ -127,6 +142,7 @@ export function LoginPage() {
                 />
                 <button
                   type="button"
+                  aria-label="Toggle password visibility"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200"
                 >

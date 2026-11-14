@@ -5,6 +5,7 @@ import { Float } from '@react-three/drei';
 import { Mesh, Vector3 } from 'three';
 import { ShieldCheck, ArrowRight, CheckCircle2, Zap, Database, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../lib/authContext';
 
 function GlowingTechCore() {
   const meshRef = useRef<Mesh>(null!);
@@ -59,6 +60,7 @@ function GlowingTechCore() {
 }
 
 export function Hero() {
+  const { user } = useAuth();
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-28 pb-20 overflow-hidden bg-slate-950 text-slate-100 bg-grid-pattern">
       {/* Ambient background light orbs */}
@@ -130,7 +132,7 @@ export function Hero() {
           transition={{ duration: 0.7, ease: 'easeOut', delay: 0.3 }}
         >
           <Link
-            to="/dashboard/verify"
+            to={user ? '/dashboard/verify' : '/login'}
             className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-cyan-500 via-primary-600 to-purple-600 text-white rounded-xl font-bold text-lg shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:opacity-95 flex items-center justify-center gap-2 group transition-all"
           >
             <span>Try Live Demo</span>
@@ -138,19 +140,21 @@ export function Hero() {
           </Link>
 
           <Link
-            to="/dashboard"
+            to={user ? '/dashboard' : '/login'}
             className="w-full sm:w-auto px-8 py-4 bg-slate-900/90 hover:bg-slate-800 text-slate-100 border-2 border-slate-700 hover:border-cyan-500/80 rounded-xl font-bold text-lg shadow-lg hover:text-white transition-all flex items-center justify-center gap-2"
           >
             <ShieldCheck className="h-5 w-5 text-cyan-400" />
-            <span>Explore Dashboard</span>
+            <span>{user ? 'Open Dashboard' : 'Explore Dashboard'}</span>
           </Link>
 
-          <Link
-            to="/login"
-            className="w-full sm:w-auto px-6 py-4 bg-slate-950/80 hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 rounded-xl font-semibold text-base transition-all flex items-center justify-center"
-          >
-            <span>Sign In</span>
-          </Link>
+          {!user && (
+            <Link
+              to="/login"
+              className="w-full sm:w-auto px-6 py-4 bg-slate-950/80 hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 rounded-xl font-semibold text-base transition-all flex items-center justify-center"
+            >
+              <span>Sign In</span>
+            </Link>
+          )}
         </motion.div>
 
         {/* Feature Highlights Pills */}

@@ -8,6 +8,7 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
 
 import { DashboardLayout } from './components/layout/DashboardLayout';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { OverviewPage } from './pages/dashboard/OverviewPage';
 import { VerifyPage } from './pages/dashboard/VerifyPage';
 import { HistoryPage } from './pages/dashboard/HistoryPage';
@@ -29,8 +30,15 @@ export function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
 
-            {/* Application Dashboard Shell & Workspaces */}
-            <Route path="/dashboard" element={<DashboardLayout />}>
+            {/* Application Dashboard Shell & Workspaces (Protected) */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<OverviewPage />} />
               <Route path="verify" element={<VerifyPage />} />
               <Route path="history" element={<HistoryPage />} />

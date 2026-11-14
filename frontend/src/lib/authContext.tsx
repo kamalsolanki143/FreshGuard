@@ -40,6 +40,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
+  // Synchronize on browser history navigation & bfcache page restore
+  useEffect(() => {
+    const syncSession = () => {
+      try {
+        const stored = sessionStorage.getItem(SESSION_KEY);
+        if (!stored && user) {
+          setUser(null);
+        } else if (stored && !user) {
+          setUser(JSON.parse(stored));
+        }
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener('pageshow', syncSession);
+    window.addEventListener('popstate', syncSession);
+    return () => {
+      window.removeEventListener('pageshow', syncSession);
+      window.removeEventListener('popstate', syncSession);
+    };
+  }, [user]);
+
   const loginAsGuest = () => {
     const guestUser: UserSession = {
       name: 'Hackathon Judge / Evaluator',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sparkles,
   CheckCircle2,
@@ -9,8 +9,9 @@ import {
   Clock,
   Copy,
   Check,
+  RotateCcw,
 } from 'lucide-react';
-import { submitVerification } from '../../lib/api';
+import { submitVerification, checkHealth } from '../../lib/api';
 import { useHistory } from '../../lib/historyContext';
 import { VerificationResponse, ClaimCategory } from '../../types';
 
@@ -60,11 +61,30 @@ export function VerifyPage() {
   const [result, setResult] = useState<VerificationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'connected' | 'standby'>('checking');
 
   const { addVerification } = useHistory();
 
+  // Check verification service connectivity on mount
+  useEffect(() => {
+    let mounted = true;
+    checkHealth()
+      .then(() => {
+        if (mounted) setBackendStatus('connected');
+      })
+      .catch(() => {
+        if (mounted) setBackendStatus('standby');
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const handleVerify = async (textToVerify = inputText) => {
-    if (!textToVerify.trim()) return;
+    if (!textToVerify || !textToVerify.trim()) {
+      setError('Please enter or select text content containing claims to verify.');
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -72,14 +92,14 @@ export function VerifyPage() {
     try {
       const resp = await submitVerification({
         request_id: `ws-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        text: textToVerify,
+        text: textToVerify.trim(),
         categories: [selectedCategory],
       });
 
       setResult(resp);
       addVerification(resp);
     } catch (err: any) {
-      setError(err.message || 'Verification failed. Ensure the verification service is running on :8000.');
+      setError(err.message || 'Verification failed. Ensure the verification backend is connected.');
     } finally {
       setLoading(false);
     }
@@ -89,6 +109,12 @@ export function VerifyPage() {
     setInputText(preset.text);
     setSelectedCategory(preset.category);
     handleVerify(preset.text);
+  };
+
+  const handleClear = () => {
+    setInputText('');
+    setResult(null);
+    setError(null);
   };
 
   const handleCopyId = (id: string) => {
@@ -102,17 +128,48 @@ export function VerifyPage() {
 
   return (
     <div className="space-y-8">
-      {/* Page Title */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-          <span>Verification Workspace</span>
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono font-bold">
-            Live Engine
+      {/* Page Title & Status */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+            <span>Verification Workspace</span>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono font-bold">
+              Live Engine
+            </span>
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Submit candidate LLM responses for real-time claim extraction, Tavily evidence retrieval, and cache eviction analysis.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <span
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold ${
+              backendStatus === 'connected'
+                ? 'bg-emerald-950/70 border-emerald-800 text-emerald-300'
+                : backendStatus === 'standby'
+                ? 'bg-amber-950/70 border-amber-800 text-amber-300'
+                : 'bg-slate-900 border-slate-800 text-slate-400'
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                backendStatus === 'connected'
+                  ? 'bg-emerald-400 animate-pulse'
+                  : backendStatus === 'standby'
+                  ? 'bg-amber-400'
+                  : 'bg-slate-500'
+              }`}
+            />
+            <span>
+              {backendStatus === 'connected'
+                ? 'Verification API Connected'
+                : backendStatus === 'standby'
+                ? 'Backend Standby / Sleep'
+                : 'Checking Connection...'}
+            </span>
           </span>
-        </h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Submit candidate LLM responses for real-time claim extraction, Tavily evidence retrieval, and cache eviction analysis.
-        </p>
+        </div>
       </div>
 
       {/* Preset Quick-Buttons */}
@@ -189,23 +246,36 @@ export function VerifyPage() {
             <p className="text-xs text-slate-500">
               ⚡ Evaluates against real-time web grounding before delivery or semantic cache reuse
             </p>
-            <button
-              onClick={() => handleVerify()}
-              disabled={loading || !inputText.trim()}
-              className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-cyan-600 via-primary-600 to-purple-600 hover:opacity-95 disabled:opacity-50 text-white font-bold text-sm rounded-xl shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2 transition-all"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Evaluating Response...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  <span>Run Verification</span>
-                </>
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              {inputText && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  disabled={loading}
+                  className="px-3.5 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition-colors flex items-center gap-1.5"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Clear</span>
+                </button>
               )}
-            </button>
+              <button
+                onClick={() => handleVerify()}
+                disabled={loading || !inputText.trim()}
+                className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-cyan-600 via-primary-600 to-purple-600 hover:opacity-95 disabled:opacity-50 text-white font-bold text-sm rounded-xl shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2 transition-all"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Evaluating Response...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    <span>Run Verification</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -367,6 +437,17 @@ export function VerifyPage() {
                       </p>
                     )}
 
+                    {/* Diagnostic Warning / API Notice */}
+                    {claim.error && (
+                      <div className="mb-3 p-2.5 bg-amber-950/50 border border-amber-800/80 rounded-xl text-xs text-amber-200 flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold">Grounding Notice: </span>
+                          <span>{claim.error}</span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Corrected value if contradicted */}
                     {claim.corrected_value && (
                       <div className="mb-3 p-2.5 bg-rose-950/40 border border-rose-900 rounded-lg text-xs text-rose-300">
@@ -376,7 +457,7 @@ export function VerifyPage() {
                     )}
 
                     {/* Grounding Evidence References */}
-                    {claim.evidence && claim.evidence.length > 0 && (
+                    {claim.evidence && claim.evidence.length > 0 ? (
                       <div className="mt-3 pt-3 border-t border-slate-800 space-y-2">
                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                           Grounding Evidence References ({claim.evidence.length})
@@ -390,17 +471,24 @@ export function VerifyPage() {
                               <span className="font-semibold text-cyan-300">
                                 {ev.title || ev.source_title || 'Documentation Source'}
                               </span>
-                              {(ev.url || ev.source_url) && (
-                                <a
-                                  href={ev.url || ev.source_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary-400 hover:text-primary-300 flex items-center gap-1 text-[11px]"
-                                >
-                                  <span>View Source</span>
-                                  <ExternalLink className="h-3 w-3" />
-                                </a>
-                              )}
+                              <div className="flex items-center gap-3">
+                                {ev.retrieved_at && (
+                                  <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+                                    {new Date(ev.retrieved_at).toLocaleTimeString()}
+                                  </span>
+                                )}
+                                {(ev.url || ev.source_url) && (
+                                  <a
+                                    href={ev.url || ev.source_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary-400 hover:text-primary-300 flex items-center gap-1 text-[11px]"
+                                  >
+                                    <span>View Source</span>
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                )}
+                              </div>
                             </div>
                             <p className="text-slate-400 text-[11px] italic">
                               "{ev.snippet || ev.content || 'Evidence verified by engine.'}"
@@ -408,6 +496,12 @@ export function VerifyPage() {
                           </div>
                         ))}
                       </div>
+                    ) : (
+                      !claim.error && (
+                        <div className="mt-3 pt-3 border-t border-slate-800 text-xs text-slate-500 italic">
+                          No external web evidence sources retrieved.
+                        </div>
+                      )
                     )}
                   </div>
                 );

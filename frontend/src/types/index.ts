@@ -34,6 +34,7 @@ export interface ClaimVerdictResult {
   attribute?: string;
   original_text?: string;
   text?: string;
+  error?: string | null;
 }
 
 export interface VerificationResponse {

@@ -41,7 +41,7 @@ export function SignupPage() {
 
   const handleGuestDemo = () => {
     loginAsGuest();
-    navigate('/dashboard/verify');
+    navigate('/dashboard', { replace: true });
   };
 
   return (

@@ -1,7 +1,9 @@
 import { Server, Search, ArrowRight, Zap, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../lib/authContext';
 
 export function ArchitectureSection() {
+  const { user } = useAuth();
   return (
     <section id="architecture" className="py-24 bg-slate-900/90 text-white relative overflow-hidden">
       {/* Background glow effects */}
@@ -101,17 +103,17 @@ export function ArchitectureSection() {
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-4">
             <Link
-              to="/dashboard/verify"
+              to={user ? '/dashboard/verify' : '/login'}
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 via-primary-600 to-purple-600 hover:opacity-95 text-white font-bold text-sm rounded-xl shadow-lg shadow-primary-500/25 flex items-center gap-2 transition-all"
             >
               <span>Open Verification Workspace</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              to="/dashboard"
+              to={user ? '/dashboard' : '/login'}
               className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm rounded-xl border border-slate-700 transition-colors"
             >
-              <span>Explore Dashboard</span>
+              <span>{user ? 'Open Dashboard' : 'Explore Dashboard'}</span>
             </Link>
           </div>
         </div>
