@@ -130,8 +130,8 @@ export function IntegrationsPage() {
                 <span className="text-slate-200">v2.5.1</span>
               </div>
               <div className="flex justify-between text-slate-400">
-                <span>Default Endpoint:</span>
-                <span className="text-slate-200">http://localhost:8080</span>
+                <span>Gateway Endpoint:</span>
+                <span className="text-slate-200">Configured via BIFROST_HOST</span>
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Clear Endpoint:</span>
@@ -141,10 +141,10 @@ export function IntegrationsPage() {
           </div>
 
           <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-            <span className="text-slate-500">Bifrost Plugin Hook</span>
-            <span className="text-emerald-400 font-semibold flex items-center gap-1">
+            <span className="text-slate-500">Gateway Integration</span>
+            <span className="text-cyan-400 font-semibold flex items-center gap-1">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>Plugin Implemented</span>
+              <span>Architecture available; live gateway connection not configured</span>
             </span>
           </div>
         </div>

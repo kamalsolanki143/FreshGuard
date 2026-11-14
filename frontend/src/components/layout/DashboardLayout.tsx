@@ -241,10 +241,10 @@ export function DashboardLayout() {
               />
               <span>
                 {serviceStatus === 'online'
-                  ? 'Service Online (:8000)'
+                  ? 'Verification API Connected'
                   : serviceStatus === 'offline'
-                  ? 'Service Standby'
-                  : 'Checking Service...'}
+                  ? 'Backend Standby / Sleep'
+                  : 'Connecting to API...'}
               </span>
             </div>
 
@@ -267,8 +267,8 @@ export function DashboardLayout() {
               <span className="font-bold text-cyan-300">Demo Mode:</span>
               <span className="text-slate-200">
                 {serviceStatus === 'online'
-                  ? 'Guest Evaluator session active. Connected to Verification Microservice (:8000). Temporal claim extraction and rule-based evaluation active.'
-                  : 'Guest Evaluator session active. Running with local simulated verification while backend service connects.'}
+                  ? 'Guest Evaluator session active. Connected to Verification Microservice. Temporal claim extraction and rule-based evaluation active.'
+                  : 'Guest Evaluator session active. Running in standby mode while verification backend connects.'}
               </span>
             </div>
             <div className="flex items-center gap-2">

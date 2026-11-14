@@ -224,3 +224,40 @@ async def test_transaction_rollback(test_db_session: AsyncSession, sample_verifi
 
     retrieved = await VerificationRepository.get_verification_by_id(test_db_session, "verif_100")
     assert retrieved is None
+
+
+def test_database_url_normalization_and_masking():
+    """Verify that PostgreSQL/Neon URLs are normalized to asyncpg and credentials masked."""
+    from app.database.database import _mask_db_url, normalize_database_url
+
+    # 1. postgres:// scheme conversion
+    neon_raw = "postgres://neon_user:super_secret_pw@ep-cold-pond-12345.us-east-2.aws.neon.tech/neondb?sslmode=require"
+    normalized = normalize_database_url(neon_raw)
+    assert normalized.startswith("postgresql+asyncpg://")
+    assert "super_secret_pw" in normalized
+
+    # 2. Masking
+    masked = _mask_db_url(normalized)
+    assert "super_secret_pw" not in masked
+    assert "neon_user:***@" in masked
+    assert "ep-cold-pond-12345.us-east-2.aws.neon.tech" in masked
+
+    # 3. postgresql:// without async driver
+    pg_raw = "postgresql://user:pass@localhost:5432/mydb"
+    norm_pg = normalize_database_url(pg_raw)
+    assert norm_pg == "postgresql+asyncpg://user:pass@localhost:5432/mydb"
+
+    # 4. sqlite+aiosqlite:/// preserves intact
+    sqlite_raw = "sqlite+aiosqlite:///./freshguard.db"
+    assert normalize_database_url(sqlite_raw) == sqlite_raw
+    assert _mask_db_url(sqlite_raw) == sqlite_raw
+
+
+@pytest.mark.asyncio
+async def test_run_migrations_in_memory():
+    """Verify that the migration utility executes and verifies tables."""
+    from app.database.migrate import run_migrations
+
+    success = await run_migrations("sqlite+aiosqlite:///:memory:")
+    assert success is True
+

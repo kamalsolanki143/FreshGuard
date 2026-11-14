@@ -41,6 +41,24 @@ def _mask_db_url(url: str) -> str:
         return "<db-url-parse-error>"
     return url
 
+def normalize_database_url(raw_url: str) -> str:
+    """Normalizes database URLs to async driver schemes.
+
+    Converts:
+      - postgres:// -> postgresql+asyncpg://
+      - postgresql:// -> postgresql+asyncpg:// (when no async driver is specified)
+    Leaves sqlite+aiosqlite:/// and explicit async drivers untouched.
+    """
+    if not raw_url:
+        return raw_url
+    url = raw_url.strip()
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    if url.startswith("postgresql://") and not url.startswith("postgresql+"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
 _engine: Optional[AsyncEngine] = None
 _sessionmaker: Optional[async_sessionmaker[AsyncSession]] = None
 
@@ -49,21 +67,34 @@ def get_engine(database_url: Optional[str] = None) -> AsyncEngine:
     """Returns or initializes the singleton AsyncEngine."""
     global _engine
     if _engine is None:
-        url = database_url or get_settings().DATABASE_URL
-        # SQLite async connection setup
-        connect_args = {"check_same_thread": False} if "sqlite" in url else {}
-        if "sqlite" in url and "///" in url and ":memory:" not in url:
+        raw_url = database_url or get_settings().DATABASE_URL
+        url = normalize_database_url(raw_url)
+        is_sqlite = "sqlite" in url
+
+        connect_args = {"check_same_thread": False} if is_sqlite else {}
+        if is_sqlite and "///" in url and ":memory:" not in url:
             from pathlib import Path
             db_path_str = url.split("///", 1)[1]
             if db_path_str:
                 db_path = Path(db_path_str).resolve()
                 db_path.parent.mkdir(parents=True, exist_ok=True)
-        _engine = create_async_engine(
-            url,
-            echo=False,
-            future=True,
-            connect_args=connect_args,
-        )
+
+        engine_kwargs = {
+            "echo": False,
+            "future": True,
+            "connect_args": connect_args,
+        }
+
+        # PostgreSQL connection pooling for serverless / scale-to-zero databases (Neon, Render)
+        if not is_sqlite:
+            engine_kwargs.update({
+                "pool_pre_ping": True,
+                "pool_recycle": 300,
+                "pool_size": 5,
+                "max_overflow": 10,
+            })
+
+        _engine = create_async_engine(url, **engine_kwargs)
         logger.info("Initialized async database engine with URL: %s", _mask_db_url(url))
     return _engine
 

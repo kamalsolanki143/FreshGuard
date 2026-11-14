@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { submitVerification } from '../lib/api';
 import {
   ShieldCheck,
   AlertTriangle,
@@ -105,34 +106,9 @@ export function VerificationSandbox() {
         categories: ['pricing', 'software_version', 'leadership'],
       };
 
-      // Call through Vite proxy (/api/v1/verifications) with fallback to direct localhost:8000
-      let res = await fetch('/api/v1/verifications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok && res.status === 404) {
-        // Fallback for direct port or local production testing
-        res = await fetch('http://localhost:8000/v1/verifications', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-      }
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.error || `HTTP error ${res.status}`);
-      }
-
-      setResult(data);
+      // Call through centralized API client (handles proxy, direct endpoint, and cold-start retries)
+      const data = await submitVerification(payload as any);
+      setResult(data as any);
     } catch (err: any) {
       console.error('Verification error:', err);
       setErrorMsg(

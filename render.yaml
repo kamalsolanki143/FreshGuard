@@ -19,12 +19,20 @@ services:
         value: INFO
       # Restrict CORS to expected frontend and gateway origins (avoid wildcard *)
       - key: CORS_ORIGINS
-        value: "http://localhost:3000,http://localhost:5173,https://freshguard.vercel.app"
-      # IMPORTANT: On Render Free tier, the local disk is EPHEMERAL.
-      # freshguard.db will be reset upon container restart or idle sleep.
-      # Persistent storage requires Render paid plan with persistent disk or external PostgreSQL.
+        value: "http://localhost:3000,http://localhost:5173,http://localhost:4173,https://freshguard.pages.dev"
+      # DATABASE CONFIGURATION:
+      # Default: sqlite+aiosqlite:///./freshguard.db (Note: local disk on Render free tier is ephemeral)
+      # For persistent production storage, supply Neon Free PostgreSQL connection string:
+      # e.g. postgresql+asyncpg://user:password@ep-xyz.us-east-2.aws.neon.tech/neondb?sslmode=require
+      # (FreshGuard automatically converts postgres:// to postgresql+asyncpg:// with serverless connection pooling)
       - key: DATABASE_URL
         value: sqlite+aiosqlite:///./freshguard.db
+      # API AUTHENTICATION:
+      # "warn" allows testing without blocking if key is missing; "enforce" requires X-API-Key header.
+      - key: API_AUTH_MODE
+        value: warn
+      - key: VERIFICATION_SERVICE_API_KEY
+        sync: false
       # IMPORTANT: "mock" provider DOES NOT perform real AI verification or call external LLMs.
       # It returns deterministic stub responses for connectivity and contract testing.
       # To enable real AI verification, set LLM_PROVIDER to "openai" and supply LLM_API_KEY.
