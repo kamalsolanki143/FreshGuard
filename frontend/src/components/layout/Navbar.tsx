@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, Github, Sparkles, LayoutDashboard, Menu, X } from 'lucide-react';
+import { Shield, Github, Sparkles, LayoutDashboard, Menu, X, LogIn, UserCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { APP_CONFIG } from '../../lib/constants';
 import { useAuth } from '../../lib/authContext';
@@ -31,7 +31,7 @@ export function Navbar() {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
           ? 'bg-slate-900/95 backdrop-blur-md shadow-xl border-b border-slate-800'
-          : 'bg-slate-950/80 backdrop-blur-sm border-b border-slate-800/60'
+          : 'bg-slate-950/85 backdrop-blur-sm border-b border-slate-800/60'
       }`}
     >
       {/* Accent gradient line */}
@@ -65,7 +65,7 @@ export function Navbar() {
               Home
             </Link>
             <a href="/#problem" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">
-              Problem & Solution
+              Problem &amp; Solution
             </a>
             <a href="/#how-it-works" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">
               Pipeline Steps
@@ -88,19 +88,41 @@ export function Navbar() {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 rounded-lg transition-colors border border-slate-700/80"
+              title="GitHub Repository"
             >
               <Github className="h-4 w-4" />
               <span>GitHub</span>
             </a>
 
+            {/* Direct Sign In Button (Prominently Visible) */}
+            <Link
+              to="/login"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-slate-200 hover:text-white bg-slate-800/90 hover:bg-slate-700/90 rounded-lg border border-slate-700 hover:border-cyan-500/50 transition-all shadow-sm"
+              title="Sign in with developer account or access demo"
+            >
+              {user && !user.isGuest ? (
+                <>
+                  <UserCheck className="h-4 w-4 text-emerald-400" />
+                  <span>Account</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="h-4 w-4 text-cyan-400" />
+                  <span>Sign In</span>
+                </>
+              )}
+            </Link>
+
+            {/* Dashboard Workspace */}
             <Link
               to="/dashboard"
-              className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700/90 rounded-lg border border-slate-700 transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-slate-200 hover:text-white bg-slate-800/90 hover:bg-slate-700/90 rounded-lg border border-slate-700 hover:border-primary-500/50 transition-all shadow-sm"
             >
               <LayoutDashboard className="h-4 w-4 text-cyan-400" />
               <span>Dashboard</span>
             </Link>
 
+            {/* Live Demo Trigger */}
             <button
               onClick={handleDemoAccess}
               className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-cyan-600 via-primary-600 to-purple-600 rounded-lg shadow-md shadow-primary-500/25 hover:shadow-primary-500/40 hover:opacity-95 transition-all"
@@ -115,6 +137,7 @@ export function Navbar() {
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none"
+              aria-label="Toggle Navigation Menu"
             >
               {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -144,7 +167,7 @@ export function Navbar() {
                 onClick={() => setMobileOpen(false)}
                 className="px-3 py-2 text-base font-medium text-slate-200 hover:bg-slate-800 rounded-lg"
               >
-                Problem & Solution
+                Problem &amp; Solution
               </a>
               <a
                 href="/#how-it-works"
@@ -177,13 +200,22 @@ export function Navbar() {
               </Link>
             </div>
 
-            <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
+            <div className="pt-3 border-t border-slate-800 flex flex-col gap-2.5">
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="w-full py-2.5 px-4 text-center font-bold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center justify-center gap-2 transition-colors"
+              >
+                <LogIn className="h-4 w-4 text-cyan-400" />
+                <span>Sign In / Developer Account</span>
+              </Link>
+
               <button
                 onClick={() => {
                   setMobileOpen(false);
                   handleDemoAccess();
                 }}
-                className="w-full py-2.5 px-4 text-center font-bold text-white bg-gradient-to-r from-cyan-600 via-primary-600 to-purple-600 rounded-lg shadow-lg flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 text-center font-bold text-white bg-gradient-to-r from-cyan-600 via-primary-600 to-purple-600 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-opacity"
               >
                 <Sparkles className="h-4 w-4" />
                 <span>Try Live Demo</span>

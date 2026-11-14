@@ -18,8 +18,8 @@ export function Features() {
       icon: Calendar,
       color: 'from-blue-500 to-cyan-500',
       badge: 'Regex + Spacy NLP',
-      badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
-      borderAccent: 'hover:border-cyan-400',
+      badgeColor: 'bg-blue-950/90 text-blue-300 border-blue-800',
+      borderAccent: 'hover:border-cyan-500/60',
     },
     {
       title: 'Tavily Live Web Evidence',
@@ -27,8 +27,8 @@ export function Features() {
       icon: Globe,
       color: 'from-emerald-500 to-teal-500',
       badge: 'Authoritative Sources',
-      badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      borderAccent: 'hover:border-emerald-400',
+      badgeColor: 'bg-emerald-950/90 text-emerald-300 border-emerald-800',
+      borderAccent: 'hover:border-emerald-500/60',
     },
     {
       title: 'Smart Semantic Cache Shield',
@@ -36,8 +36,8 @@ export function Features() {
       icon: Shield,
       color: 'from-purple-500 to-indigo-600',
       badge: 'Bifrost Compatible',
-      badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
-      borderAccent: 'hover:border-purple-400',
+      badgeColor: 'bg-purple-950/90 text-purple-300 border-purple-800',
+      borderAccent: 'hover:border-purple-500/60',
     },
     {
       title: 'Category-Based TTL Policies',
@@ -45,8 +45,8 @@ export function Features() {
       icon: Timer,
       color: 'from-amber-500 to-orange-500',
       badge: 'Customizable Rules',
-      badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
-      borderAccent: 'hover:border-amber-400',
+      badgeColor: 'bg-amber-950/90 text-amber-300 border-amber-800',
+      borderAccent: 'hover:border-amber-500/60',
     },
     {
       title: 'Fail-Open & Fail-Closed Modes',
@@ -54,8 +54,8 @@ export function Features() {
       icon: AlertCircle,
       color: 'from-rose-500 to-red-500',
       badge: 'Enterprise Reliability',
-      badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
-      borderAccent: 'hover:border-rose-400',
+      badgeColor: 'bg-rose-950/90 text-rose-300 border-rose-800',
+      borderAccent: 'hover:border-rose-500/60',
     },
     {
       title: 'Native Go Bifrost Plugin',
@@ -63,15 +63,15 @@ export function Features() {
       icon: Database,
       color: 'from-indigo-500 to-purple-600',
       badge: 'Sub-20ms Overhead',
-      badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-      borderAccent: 'hover:border-indigo-400',
+      badgeColor: 'bg-indigo-950/90 text-indigo-300 border-indigo-800',
+      borderAccent: 'hover:border-indigo-500/60',
     },
   ];
 
   return (
-    <section className="py-24 bg-white relative overflow-hidden" id="features">
+    <section className="py-24 bg-slate-950 text-slate-100 relative overflow-hidden border-t border-slate-800/80" id="features">
       {/* Decorative gradient spot */}
-      <div className="absolute top-0 right-1/4 w-80 h-80 bg-purple-200/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-1/4 w-80 h-80 bg-purple-900/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
         <motion.div
@@ -81,14 +81,14 @@ export function Features() {
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-100 text-primary-800 font-bold text-xs uppercase tracking-wider mb-4 border border-primary-200">
-            <Sparkles className="h-4 w-4 text-primary-600" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-950/80 text-primary-300 font-bold text-xs uppercase tracking-wider mb-4 border border-primary-800/80 shadow-sm">
+            <Sparkles className="h-4 w-4 text-primary-400" />
             <span>Comprehensive Toolset</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
             Built for <span className="gradient-text">Speed, Accuracy &amp; Resilience</span>
           </h2>
-          <p className="text-lg sm:text-xl text-slate-700 max-w-3xl mx-auto font-medium">
+          <p className="text-lg sm:text-xl text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed">
             Everything your engineering team needs to eliminate hallucinations from customer-facing LLM applications.
           </p>
         </motion.div>
@@ -97,7 +97,7 @@ export function Features() {
           {featureList.map((feature, index) => (
             <motion.div
               key={feature.title}
-              className={`bg-slate-50/80 rounded-2xl p-6 sm:p-7 border-2 border-slate-200/90 ${feature.borderAccent} shadow-sm hover:shadow-xl hover:bg-white transition-all duration-300 flex flex-col justify-between group`}
+              className={`bg-slate-900/85 rounded-2xl p-6 sm:p-7 border border-slate-800 ${feature.borderAccent} shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group`}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -114,16 +114,16 @@ export function Features() {
                   </span>
                 </div>
 
-                <h3 className="text-xl font-bold text-slate-900 mb-2.5 group-hover:text-primary-600 transition-colors">
+                <h3 className="text-xl font-bold text-white mb-2.5 group-hover:text-cyan-400 transition-colors">
                   {feature.title}
                 </h3>
-                <p className="text-slate-700 text-sm leading-relaxed mb-6">
+                <p className="text-slate-400 text-sm leading-relaxed mb-6">
                   {feature.description}
                 </p>
               </div>
 
-              <div className="pt-4 border-t border-slate-200 flex items-center text-xs font-bold text-primary-700">
-                <CheckCircle className="h-4 w-4 mr-1.5 text-primary-600" />
+              <div className="pt-4 border-t border-slate-800/80 flex items-center text-xs font-bold text-cyan-400">
+                <CheckCircle className="h-4 w-4 mr-1.5 text-cyan-400" />
                 <span>Production-ready module</span>
               </div>
             </motion.div>

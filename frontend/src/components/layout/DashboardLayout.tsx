@@ -14,6 +14,7 @@ import {
   Sparkles,
   User,
   LogOut,
+  UserCheck,
 } from 'lucide-react';
 import { useAuth } from '../../lib/authContext';
 import { checkHealth } from '../../lib/api';
@@ -38,7 +39,7 @@ const SIDEBAR_ITEMS: NavItem[] = [
 export function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isGuest, logout } = useAuth();
+  const { user, isGuest, loginAsGuest, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [serviceStatus, setServiceStatus] = useState<'checking' | 'online' | 'offline'>('checking');
 
@@ -79,6 +80,7 @@ export function DashboardLayout() {
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+          aria-label="Toggle Navigation Drawer"
         >
           {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
@@ -155,7 +157,11 @@ export function DashboardLayout() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-400 font-bold text-xs flex-shrink-0">
-                <User className="h-4 w-4" />
+                {user && !user.isGuest ? (
+                  <UserCheck className="h-4 w-4 text-emerald-400" />
+                ) : (
+                  <User className="h-4 w-4" />
+                )}
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-slate-200 truncate">
@@ -168,7 +174,7 @@ export function DashboardLayout() {
             </div>
             <button
               onClick={handleLogout}
-              title="Logout / Reset Session"
+              title="Sign Out / Reset Session"
               className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
             >
               <LogOut className="h-4 w-4" />
@@ -239,6 +245,50 @@ export function DashboardLayout() {
             </Link>
           </div>
         </header>
+
+        {/* Persistent Demo / Session Status Banner */}
+        {isGuest ? (
+          <div className="bg-gradient-to-r from-cyan-950/90 via-primary-950/70 to-purple-950/90 border-b border-cyan-800/50 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-cyan-400 flex-shrink-0 animate-pulse" />
+              <span className="font-bold text-cyan-300">Demo Mode:</span>
+              <span className="text-slate-200">
+                Guest Evaluator session active. Real-time verification is live with Tavily web grounding and Bifrost cache eviction.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/login"
+                className="px-2.5 py-1 bg-cyan-900/70 hover:bg-cyan-800 text-cyan-200 font-semibold rounded-md border border-cyan-700/70 transition-colors"
+              >
+                Sign In as Developer
+              </Link>
+            </div>
+          </div>
+        ) : user ? (
+          <div className="bg-slate-900/90 border-b border-slate-800 px-6 py-2 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+              <span className="font-bold text-slate-200">Developer Account:</span>
+              <span className="text-slate-300 font-mono">{user.email}</span>
+              <span className="text-slate-500">({user.role})</span>
+            </div>
+            <span className="text-[11px] text-emerald-400 font-semibold">Bifrost Gateway Ready</span>
+          </div>
+        ) : (
+          <div className="bg-amber-950/70 border-b border-amber-800/60 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-200">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span>Viewing in unauthenticated state. Activate guest evaluator mode or sign in to save test claims.</span>
+            </div>
+            <button
+              onClick={loginAsGuest}
+              className="px-2.5 py-1 bg-amber-900/70 hover:bg-amber-800 text-amber-100 font-semibold rounded-md border border-amber-700/70 transition-colors"
+            >
+              Activate Evaluator Demo
+            </button>
+          </div>
+        )}
 
         {/* Workspace Content Outlet */}
         <main className="p-6 md:p-8 flex-1 max-w-7xl mx-auto w-full">

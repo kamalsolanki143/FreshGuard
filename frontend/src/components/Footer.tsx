@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Github, Twitter, Linkedin, Mail, Shield, Heart } from 'lucide-react';
+import { Github, Twitter, Linkedin, Mail, Shield, Heart, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { APP_CONFIG } from '../lib/constants';
 
 export function Footer() {
@@ -15,14 +16,14 @@ export function Footer() {
         >
           {/* Brand info */}
           <div className="col-span-2 md:col-span-1">
-            <a href="/" className="flex items-center space-x-2.5 mb-4 inline-block group">
+            <Link to="/" className="flex items-center space-x-2.5 mb-4 inline-block group">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 via-primary-600 to-purple-600 flex items-center justify-center text-white shadow-md">
                 <Shield className="h-5 w-5" />
               </div>
               <span className="text-2xl font-black text-white group-hover:text-primary-400 transition-colors">
                 Fresh<span className="text-primary-500">Guard</span>
               </span>
-            </a>
+            </Link>
             <p className="text-slate-400 text-sm leading-relaxed mb-4">
               Real-time freshness verification for LLM responses with Tavily-powered live evidence and Bifrost semantic cache protection.
             </p>
@@ -34,24 +35,44 @@ export function Footer() {
 
           {/* Navigation Links */}
           <div>
-            <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Product</h3>
+            <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Application</h3>
             <ul className="space-y-2.5 text-sm font-medium">
-              <li><a href="#problem" className="text-slate-400 hover:text-cyan-400 transition-colors">The Problem</a></li>
-              <li><a href="#solution" className="text-slate-400 hover:text-cyan-400 transition-colors">Pipeline Solution</a></li>
-              <li><a href="#features" className="text-slate-400 hover:text-cyan-400 transition-colors">Key Features</a></li>
-              <li><a href="#how-it-works" className="text-slate-400 hover:text-cyan-400 transition-colors">How It Works</a></li>
-              <li><a href="#benefits" className="text-slate-400 hover:text-cyan-400 transition-colors">ROI &amp; Benefits</a></li>
+              <li><Link to="/dashboard" className="text-slate-400 hover:text-cyan-400 transition-colors">Dashboard Overview</Link></li>
+              <li><Link to="/dashboard/verify" className="text-slate-400 hover:text-cyan-400 transition-colors">Verify Workspace</Link></li>
+              <li><Link to="/dashboard/history" className="text-slate-400 hover:text-cyan-400 transition-colors">Audit &amp; History</Link></li>
+              <li><Link to="/dashboard/cache" className="text-slate-400 hover:text-cyan-400 transition-colors">Cache Invalidation</Link></li>
+              <li><Link to="/docs" className="text-slate-400 hover:text-cyan-400 transition-colors">API &amp; Plugin Docs</Link></li>
             </ul>
           </div>
 
-          {/* Architecture Links */}
+          {/* Developer & Auth */}
           <div>
-            <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Resources</h3>
+            <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Developer Access</h3>
             <ul className="space-y-2.5 text-sm font-medium">
-              <li><a href={APP_CONFIG.github} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-cyan-400 transition-colors">GitHub Repository</a></li>
-              <li><a href="https://tavily.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-cyan-400 transition-colors">Tavily Search API</a></li>
-              <li><a href="#faq" className="text-slate-400 hover:text-cyan-400 transition-colors">Frequently Asked Questions</a></li>
-              <li><a href={`mailto:${APP_CONFIG.email}`} className="text-slate-400 hover:text-cyan-400 transition-colors">Architecture Consultation</a></li>
+              <li><Link to="/login" className="text-slate-400 hover:text-cyan-400 transition-colors">Sign In / Demo Access</Link></li>
+              <li><Link to="/signup" className="text-slate-400 hover:text-cyan-400 transition-colors">Register Developer Account</Link></li>
+              <li>
+                <a
+                  href={APP_CONFIG.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-400 hover:text-cyan-400 transition-colors inline-flex items-center gap-1"
+                >
+                  <span>GitHub Repository</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://tavily.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-400 hover:text-cyan-400 transition-colors inline-flex items-center gap-1"
+                >
+                  <span>Tavily Search API</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </li>
             </ul>
           </div>
 

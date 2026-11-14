@@ -8,32 +8,32 @@ export function ProposedSolution() {
       title: '1. Intelligent Claim Extraction',
       description: 'The FreshGuard engine scans LLM outputs in real time, detecting temporal claims around pricing tiers, API versions, and organizational moves.',
       color: 'from-blue-500 to-cyan-500',
-      badge: 'Regex + NER',
-      badgeColor: 'bg-blue-100 text-blue-800',
+      badge: 'Regex + Spacy NER',
+      badgeColor: 'bg-blue-950/80 text-blue-300 border border-blue-800',
     },
     {
       icon: Search,
       title: '2. Live Tavily Evidence Retrieval',
-      description: 'Dispatches targeted freshness verification queries via Tavily API to fetch authoritative web evidence with millisecond latency.',
+      description: 'Dispatches targeted freshness verification queries via Tavily API to fetch authoritative web evidence with sub-second latency.',
       color: 'from-emerald-500 to-teal-500',
       badge: 'Live Web Search',
-      badgeColor: 'bg-emerald-100 text-emerald-800',
+      badgeColor: 'bg-emerald-950/80 text-emerald-300 border border-emerald-800',
     },
     {
       icon: Database,
       title: '3. Bifrost Semantic Cache Protection',
-      description: 'Updates cache metadata with exact TTL policies. Validated responses are cached; poisoned or outdated claims are instantly purged.',
+      description: 'Updates cache metadata with exact TTL policies. Validated responses are cached; poisoned or outdated claims are instantly purged via cache clear APIs.',
       color: 'from-purple-500 to-indigo-600',
       badge: 'Gateway Plugin',
-      badgeColor: 'bg-purple-100 text-purple-800',
+      badgeColor: 'bg-purple-950/80 text-purple-300 border border-purple-800',
     },
   ];
 
   return (
-    <section className="relative py-24 bg-gradient-to-b from-slate-50 via-white to-sky-50/50 overflow-hidden" id="solution">
+    <section className="relative py-24 bg-slate-950 text-slate-100 overflow-hidden border-t border-slate-800/80" id="solution">
       {/* Background colorful glow */}
-      <div className="absolute top-1/3 right-0 w-96 h-96 bg-primary-300/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-10 left-10 w-96 h-96 bg-emerald-300/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/3 right-0 w-96 h-96 bg-primary-900/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-10 left-10 w-96 h-96 bg-emerald-900/15 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 z-10">
         <motion.div
@@ -43,14 +43,14 @@ export function ProposedSolution() {
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs uppercase tracking-wider mb-4 border border-emerald-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-950/80 text-emerald-300 font-bold text-xs uppercase tracking-wider mb-4 border border-emerald-800/80 shadow-sm">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
             <span>Architecture &amp; Pipeline</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
             How FreshGuard <span className="gradient-text">Protects Your LLM Stack</span>
           </h2>
-          <p className="text-lg sm:text-xl text-slate-700 max-w-3xl mx-auto font-medium">
+          <p className="text-lg sm:text-xl text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed">
             A high-speed Go plugin between your AI application, Tavily search, and the Bifrost semantic gateway.
           </p>
         </motion.div>
@@ -61,7 +61,7 @@ export function ProposedSolution() {
             {steps.map((step, index) => (
               <motion.div
                 key={step.title}
-                className="bg-white rounded-2xl p-6 border-2 border-slate-200/90 shadow-md hover:shadow-lg transition-all group"
+                className="bg-slate-900/80 rounded-2xl p-6 border border-slate-800 hover:border-cyan-500/50 shadow-xl transition-all group"
                 initial={{ opacity: 0, x: -30 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
@@ -73,14 +73,14 @@ export function ProposedSolution() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary-600 transition-colors">
+                      <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">
                         {step.title}
                       </h3>
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${step.badgeColor}`}>
                         {step.badge}
                       </span>
                     </div>
-                    <p className="text-slate-700 text-sm leading-relaxed">
+                    <p className="text-slate-400 text-sm leading-relaxed">
                       {step.description}
                     </p>
                   </div>
@@ -91,7 +91,7 @@ export function ProposedSolution() {
 
           {/* Right Column: Live Interactive Simulator Card */}
           <motion.div
-            className="lg:col-span-6 bg-slate-950 text-slate-100 rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-800 relative overflow-hidden"
+            className="lg:col-span-6 bg-slate-900/90 text-slate-100 rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-800 relative overflow-hidden"
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
@@ -114,13 +114,13 @@ export function ProposedSolution() {
             {/* Simulated Live Query */}
             <div className="space-y-4 font-mono text-xs sm:text-sm">
               {/* User Prompt */}
-              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
                 <div className="text-slate-400 text-[11px] uppercase tracking-wider mb-1">Incoming LLM Query</div>
                 <div className="text-cyan-300 font-medium">"What is the latest per-token price of GPT-4o?"</div>
               </div>
 
               {/* Intercepted Claim */}
-              <div className="p-3.5 rounded-xl bg-slate-900/90 border border-amber-900/60">
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-amber-900/60">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-amber-400 text-[11px] uppercase tracking-wider font-bold">Detected Temporal Claim</span>
                   <span className="text-[10px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800">Category: Pricing</span>
@@ -129,7 +129,7 @@ export function ProposedSolution() {
               </div>
 
               {/* Tavily Verification Step */}
-              <div className="p-3.5 rounded-xl bg-slate-900/90 border border-emerald-900/60">
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-emerald-900/60">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-1.5">
                     <Search className="h-3.5 w-3.5 text-emerald-400" />
@@ -140,19 +140,19 @@ export function ProposedSolution() {
                 <div className="text-slate-300 text-xs">Evidence: openai.com/api/pricing cites <span className="text-emerald-400 font-bold">$2.50 / 1M tokens</span>.</div>
                 <div className="mt-2 text-rose-400 font-bold flex items-center gap-1.5">
                   <span>Result:</span>
-                  <span className="bg-rose-950/80 px-2 py-0.5 rounded border border-rose-800">Outdated Claim Contradicted</span>
+                  <span className="bg-rose-950/80 px-2 py-0.5 rounded border border-rose-800 text-xs">Outdated Claim Contradicted</span>
                 </div>
               </div>
 
               {/* Bifrost Gateway Action */}
-              <div className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-800/60 flex items-center justify-between">
+              <div className="p-3.5 rounded-xl bg-purple-950/30 border border-purple-800/60 flex items-center justify-between">
                 <div>
                   <div className="text-purple-300 font-bold text-xs">Bifrost Gateway Action</div>
                   <div className="text-slate-300 text-xs mt-0.5">Stale entry purged; cache re-populated with verified data (TTL: 24h)</div>
                 </div>
                 <div className="text-right">
                   <div className="text-emerald-400 font-bold text-sm">✓ Protected</div>
-                  <div className="text-[11px] text-slate-400">Total latency: 14ms</div>
+                  <div className="text-[11px] text-slate-400">Total latency: &lt; 20ms</div>
                 </div>
               </div>
             </div>
@@ -160,16 +160,16 @@ export function ProposedSolution() {
             {/* Bottom mini metrics */}
             <div className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-800 text-center">
               <div>
-                <div className="text-emerald-400 font-bold text-lg">99.7%</div>
-                <div className="text-[11px] text-slate-400">Claim Accuracy</div>
+                <div className="text-emerald-400 font-bold text-lg">Verified</div>
+                <div className="text-[11px] text-slate-400">Web Evidence Grounding</div>
               </div>
               <div>
-                <div className="text-cyan-400 font-bold text-lg">14ms</div>
-                <div className="text-[11px] text-slate-400">Average Overhead</div>
+                <div className="text-cyan-400 font-bold text-lg">&lt; 20ms</div>
+                <div className="text-[11px] text-slate-400">Plugin Middleware Overhead</div>
               </div>
               <div>
                 <div className="text-purple-400 font-bold text-lg">Fail-Safe</div>
-                <div className="text-[11px] text-slate-400">Configurable Modes</div>
+                <div className="text-[11px] text-slate-400">Fail-Open / Closed Modes</div>
               </div>
             </div>
           </motion.div>

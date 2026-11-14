@@ -41,14 +41,14 @@ export function HowItWorks() {
     {
       step: '06',
       title: 'Safe Cached Delivery',
-      description: 'Accurate responses are safely cached in Bifrost; contradicted claims are rejected or flagged.',
+      description: 'Accurate responses are safely cached in Bifrost; contradicted claims are rejected or purged.',
       icon: ShieldCheck,
       color: 'from-fuchsia-600 to-pink-600',
     },
   ];
 
   return (
-    <section className="py-24 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden" id="how-it-works">
+    <section className="py-24 bg-slate-900/60 relative overflow-hidden border-t border-slate-800/80" id="how-it-works">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
         <motion.div
           className="text-center mb-16"
@@ -57,14 +57,14 @@ export function HowItWorks() {
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-100 text-cyan-800 font-bold text-xs uppercase tracking-wider mb-4 border border-cyan-200">
-            <ArrowRight className="h-4 w-4 text-cyan-600" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-950/80 text-cyan-300 font-bold text-xs uppercase tracking-wider mb-4 border border-cyan-800/80 shadow-sm">
+            <ArrowRight className="h-4 w-4 text-cyan-400" />
             <span>Step-by-Step Flow</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
             How <span className="gradient-text">FreshGuard Operates</span>
           </h2>
-          <p className="text-lg sm:text-xl text-slate-700 max-w-3xl mx-auto font-medium">
+          <p className="text-lg sm:text-xl text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed">
             From raw LLM output to verified, cache-protected answers in milliseconds.
           </p>
         </motion.div>
@@ -74,7 +74,7 @@ export function HowItWorks() {
           {steps.map((step, index) => (
             <motion.div
               key={step.step}
-              className="bg-white rounded-2xl p-6 sm:p-7 border-2 border-slate-200/90 hover:border-primary-400 shadow-md hover:shadow-xl transition-all duration-300 relative group flex flex-col justify-between"
+              className="bg-slate-950/90 rounded-2xl p-6 sm:p-7 border border-slate-800 hover:border-cyan-500/60 shadow-xl hover:shadow-2xl transition-all duration-300 relative group flex flex-col justify-between"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -86,22 +86,22 @@ export function HowItWorks() {
                   <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${step.color} text-white flex items-center justify-center font-bold text-lg shadow-md`}>
                     <step.icon className="h-6 w-6" />
                   </div>
-                  <span className="text-2xl font-black text-slate-300 group-hover:text-primary-600 transition-colors font-mono">
+                  <span className="text-2xl font-black text-slate-600 group-hover:text-cyan-400 transition-colors font-mono">
                     {step.step}
                   </span>
                 </div>
 
-                <h3 className="text-xl font-bold text-slate-900 mb-2.5 group-hover:text-primary-600 transition-colors">
+                <h3 className="text-xl font-bold text-white mb-2.5 group-hover:text-cyan-400 transition-colors">
                   {step.title}
                 </h3>
-                <p className="text-slate-700 text-sm leading-relaxed">
+                <p className="text-slate-400 text-sm leading-relaxed">
                   {step.description}
                 </p>
               </div>
 
-              <div className="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-500">
+              <div className="mt-6 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold text-slate-500">
                 <span>Phase {index < 3 ? '1: Inspection' : '2: Enforcement'}</span>
-                <span className="text-primary-600 font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">
+                <span className="text-cyan-400 font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">
                   Next &rarr;
                 </span>
               </div>
