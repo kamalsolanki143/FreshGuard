@@ -79,3 +79,4 @@ export interface UserSession {
   isGuest: boolean;
   loggedInAt: string;
 }
+
