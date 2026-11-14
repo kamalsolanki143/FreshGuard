@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "qa": "node run_browser_qa.cjs",
+    "validate": "node run_final_validation.cjs",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "format": "prettier --write src"
   },

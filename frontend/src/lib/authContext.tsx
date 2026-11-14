@@ -24,14 +24,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore parsing error
     }
-    // Default to guest/demo mode so judges can explore immediately without friction
-    return {
-      name: 'Hackathon Judge / Evaluator',
-      email: 'judge@freshguard.demo',
-      role: 'Guest Evaluator',
-      isGuest: true,
-      loggedInAt: new Date().toISOString(),
-    };
+    // Start with null if no session stored; visitors become guest by clicking demo or developer by signing in
+    return null;
   });
 
   useEffect(() => {

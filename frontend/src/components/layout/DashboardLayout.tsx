@@ -15,6 +15,7 @@ import {
   User,
   LogOut,
   UserCheck,
+  LogIn,
 } from 'lucide-react';
 import { useAuth } from '../../lib/authContext';
 import { checkHealth } from '../../lib/api';
@@ -110,14 +111,14 @@ export function DashboardLayout() {
             </div>
           </Link>
 
-          {/* Demo Mode Badge */}
+          {/* Session Mode Badge */}
           <div className="mt-4 px-3 py-1.5 bg-gradient-to-r from-cyan-950/60 to-primary-950/60 border border-cyan-800/60 rounded-lg flex items-center justify-between text-xs">
             <div className="flex items-center gap-1.5 text-cyan-300 font-semibold">
               <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
-              <span>{isGuest ? 'Judge Demo Mode' : 'Developer Console'}</span>
+              <span>{isGuest ? 'Judge Demo Mode' : user ? 'Developer Console' : 'Guest Preview'}</span>
             </div>
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-900/80 text-cyan-200">
-              Active
+              {user ? 'Active' : 'Preview'}
             </span>
           </div>
         </div>
@@ -159,26 +160,38 @@ export function DashboardLayout() {
               <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-400 font-bold text-xs flex-shrink-0">
                 {user && !user.isGuest ? (
                   <UserCheck className="h-4 w-4 text-emerald-400" />
-                ) : (
+                ) : user ? (
                   <User className="h-4 w-4" />
+                ) : (
+                  <LogIn className="h-4 w-4 text-amber-400" />
                 )}
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-slate-200 truncate">
-                  {user?.name || 'Guest Evaluator'}
+                  {user?.name || 'Unauthenticated'}
                 </p>
                 <p className="text-[10px] text-slate-400 truncate">
-                  {user?.email || 'judge@freshguard.demo'}
+                  {user?.email || 'Sign in or start demo'}
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              title="Sign Out / Reset Session"
-              className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
+            {user ? (
+              <button
+                onClick={handleLogout}
+                title="Sign Out / Reset Session"
+                className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                title="Sign In"
+                className="p-1.5 text-cyan-400 hover:text-cyan-300 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <LogIn className="h-4 w-4" />
+              </Link>
+            )}
           </div>
 
           <Link
@@ -246,14 +259,16 @@ export function DashboardLayout() {
           </div>
         </header>
 
-        {/* Persistent Demo / Session Status Banner */}
+        {/* Dynamic Demo / Session Status Banner */}
         {isGuest ? (
           <div className="bg-gradient-to-r from-cyan-950/90 via-primary-950/70 to-purple-950/90 border-b border-cyan-800/50 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-cyan-400 flex-shrink-0 animate-pulse" />
               <span className="font-bold text-cyan-300">Demo Mode:</span>
               <span className="text-slate-200">
-                Guest Evaluator session active. Real-time verification is live with Tavily web grounding and Bifrost cache eviction.
+                {serviceStatus === 'online'
+                  ? 'Guest Evaluator session active. Connected to Verification Microservice (:8000). Temporal claim extraction and rule-based evaluation active.'
+                  : 'Guest Evaluator session active. Running with local simulated verification while backend service connects.'}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -279,14 +294,22 @@ export function DashboardLayout() {
           <div className="bg-amber-950/70 border-b border-amber-800/60 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-200">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-400" />
-              <span>Viewing in unauthenticated state. Activate guest evaluator mode or sign in to save test claims.</span>
+              <span>Viewing in unauthenticated state. Activate guest evaluator mode or sign in with a developer account.</span>
             </div>
-            <button
-              onClick={loginAsGuest}
-              className="px-2.5 py-1 bg-amber-900/70 hover:bg-amber-800 text-amber-100 font-semibold rounded-md border border-amber-700/70 transition-colors"
-            >
-              Activate Evaluator Demo
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={loginAsGuest}
+                className="px-2.5 py-1 bg-amber-900/70 hover:bg-amber-800 text-amber-100 font-semibold rounded-md border border-amber-700/70 transition-colors"
+              >
+                Activate Evaluator Demo
+              </button>
+              <Link
+                to="/login"
+                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-md border border-slate-700 transition-colors"
+              >
+                Sign In
+              </Link>
+            </div>
           </div>
         )}
 

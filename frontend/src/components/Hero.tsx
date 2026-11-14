@@ -192,19 +192,19 @@ export function Hero() {
           </div>
 
           <div className="bg-slate-900/90 backdrop-blur-md p-5 rounded-2xl border border-emerald-800/60 shadow-xl shadow-emerald-950/40 hover:border-emerald-500/60 transition-all text-center group">
-            <div className="text-3xl sm:text-4xl font-black text-emerald-400 mb-1.5">Real-Time</div>
-            <div className="text-xs sm:text-sm font-bold text-white">Live Web Evidence</div>
-            <div className="text-[11px] text-slate-400 mt-1">Tavily API search grounding</div>
+            <div className="text-3xl sm:text-4xl font-black text-emerald-400 mb-1.5">Live Grounding</div>
+            <div className="text-xs sm:text-sm font-bold text-white">Tavily Web Adapter</div>
+            <div className="text-[11px] text-slate-400 mt-1">External evidence verification</div>
           </div>
 
           <div className="bg-slate-900/90 backdrop-blur-md p-5 rounded-2xl border border-primary-800/60 shadow-xl shadow-primary-950/40 hover:border-primary-500/60 transition-all text-center group">
             <div className="text-3xl sm:text-4xl font-black text-primary-400 mb-1.5">&lt; 20ms</div>
             <div className="text-xs sm:text-sm font-bold text-white">Plugin Middleware</div>
-            <div className="text-[11px] text-slate-400 mt-1">Ultra-low Go interception</div>
+            <div className="text-[11px] text-slate-400 mt-1">Benchmarked Go interception</div>
           </div>
 
           <div className="bg-slate-900/90 backdrop-blur-md p-5 rounded-2xl border border-purple-800/60 shadow-xl shadow-purple-950/40 hover:border-purple-500/60 transition-all text-center group">
-            <div className="text-3xl sm:text-4xl font-black text-purple-400 mb-1.5">100%</div>
+            <div className="text-3xl sm:text-4xl font-black text-purple-400 mb-1.5">100% Policy</div>
             <div className="text-xs sm:text-sm font-bold text-white">Cache Invalidation</div>
             <div className="text-[11px] text-slate-400 mt-1">Purges contradicted entries</div>
           </div>
