@@ -26,14 +26,17 @@ export function IntegrationsPage() {
 
     // 1. Check Python service
     try {
+      const healthStartedAt = performance.now();
       const h = await checkHealth();
+      const healthLatency = Math.round(performance.now() - healthStartedAt);
       setPythonCheck({
         status: 'healthy',
         lastChecked: new Date().toLocaleTimeString(),
         details: {
           service: h.service,
           version: h.version,
-          endpoint: 'https://freshguard-verification.onrender.com',
+          endpoint: 'Render verification service',
+          latency: `${healthLatency} ms`,
         },
       });
     } catch (err: any) {
@@ -163,7 +166,7 @@ export function IntegrationsPage() {
                     : 'bg-amber-950 text-amber-300 border border-amber-800'
                 }`}
               >
-                {pythonCheck.status === 'healthy' ? 'Online' : 'Checking'}
+                {pythonCheck.status === 'healthy' ? 'Online' : pythonCheck.status === 'error' ? 'Offline' : 'Checking'}
               </span>
             </div>
 
@@ -193,7 +196,7 @@ export function IntegrationsPage() {
           <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
             <span className="text-slate-500">API Latency</span>
             <span className="text-cyan-400 font-mono font-semibold">
-              {pythonCheck.status === 'healthy' ? '< 30ms' : 'Standby'}
+              {pythonCheck.status === 'healthy' ? (pythonCheck.details?.latency || 'Measured') : 'Unavailable'}
             </span>
           </div>
         </div>
