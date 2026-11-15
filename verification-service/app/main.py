@@ -163,6 +163,24 @@ def create_app() -> FastAPI:
             },
         )
 
+    @app.middleware("http")
+    async def enforce_verification_content_type(request: Request, call_next):
+        if request.method == "POST" and request.url.path.rstrip("/") == "/v1/verifications":
+            content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+            if content_type != "application/json":
+                request_id = request.headers.get("X-Request-ID") or "unknown"
+                return JSONResponse(
+                    status_code=415,
+                    content={
+                        "code": "UNSUPPORTED_MEDIA_TYPE",
+                        "message": "Content-Type must be application/json.",
+                        "request_id": request_id,
+                        "retryable": False,
+                        "details": {"received_content_type": content_type or None},
+                    },
+                )
+        return await call_next(request)
+
     # Register Routers
     app.include_router(health.router)
     app.include_router(verifications.router)
