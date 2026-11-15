@@ -37,7 +37,7 @@ export function DocsPage() {
             <span className="text-cyan-400 font-bold block">Quick Launch:</span>
             <pre className="font-mono text-slate-200">python scripts/run_dev.py</pre>
             <p className="text-slate-400">
-              Starts Python Verification Service on <code className="text-cyan-300">http://127.0.0.1:8000</code> and the React Frontend on <code className="text-cyan-300">http://localhost:3000</code>.
+              Local development only: Python Verification Service on <code className="text-cyan-300">http://127.0.0.1:8000</code> and React Frontend on <code className="text-cyan-300">http://localhost:3000</code>. Hosted deployments use the configured Render API endpoint and Vercel frontend URL.
             </p>
           </div>
         </div>
