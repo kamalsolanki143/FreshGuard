@@ -62,7 +62,7 @@ export function Features() {
       description: 'Ultra-low overhead Go middleware designed to plug directly into Bifrost API gateways with zero runtime dependencies.',
       icon: Database,
       color: 'from-indigo-500 to-purple-600',
-      badge: 'Sub-20ms Overhead',
+      badge: 'Go Hook Overhead',
       badgeColor: 'bg-indigo-950/90 text-indigo-300 border-indigo-800',
       borderAccent: 'hover:border-indigo-500/60',
     },
