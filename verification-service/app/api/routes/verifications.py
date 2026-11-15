@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Header, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_pipeline, require_api_key
+from app.api.dependencies import enforce_rate_limit, get_pipeline, require_api_key
 from app.database.database import get_db_session
 from app.database.models import VerificationRecord
 from app.database.repository import VerificationRepository
@@ -29,7 +29,7 @@ logger = logging.getLogger("freshguard.api.verifications")
 router = APIRouter(
     prefix="/v1/verifications",
     tags=["verifications"],
-    dependencies=[Depends(require_api_key)],
+    dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
 )
 
 
