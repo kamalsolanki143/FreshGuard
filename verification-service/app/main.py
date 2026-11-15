@@ -98,8 +98,10 @@ def create_app() -> FastAPI:
             exc.details,
         )
         req_id = request.headers.get("X-Request-ID") or request.headers.get("x-request-id") or "unknown"
+        response_headers = {"Retry-After": "60"} if exc.status_code == 429 else None
         return JSONResponse(
             status_code=exc.status_code,
+            headers=response_headers,
             content={
                 "code": exc.code,
                 "message": exc.message,
