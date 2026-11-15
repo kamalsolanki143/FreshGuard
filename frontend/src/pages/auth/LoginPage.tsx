@@ -110,7 +110,7 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="login-email" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Developer Email
               </label>
               <div className="relative">
@@ -118,6 +118,9 @@ export function LoginPage() {
                   <Mail className="h-4 w-4" />
                 </div>
                 <input
+                  id="login-email"
+                  name="email"
+                  autoComplete="email"
                   type="email"
                   required
                   value={email}
@@ -129,7 +132,7 @@ export function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="login-password" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Password
               </label>
               <div className="relative">
@@ -137,6 +140,9 @@ export function LoginPage() {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
+                  id="login-password"
+                  name="password"
+                  autoComplete="current-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
