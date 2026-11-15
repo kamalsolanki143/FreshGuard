@@ -86,7 +86,7 @@ export function CTA() {
             </div>
             <h3 className="font-bold text-white text-base mb-1.5">Plug &amp; Play Integration</h3>
             <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-              Native Go middleware plugin that drops cleanly into existing Bifrost semantic gateway pipelines.
+              Go plugin architecture and simulator are provided. A live production Bifrost gateway connection is not configured in this demo.
             </p>
           </div>
 
