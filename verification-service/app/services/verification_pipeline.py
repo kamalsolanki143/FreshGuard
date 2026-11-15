@@ -137,7 +137,7 @@ class VerificationPipeline:
             logger.info("Prefilter bypassed verification for request %s (signals: %s)", request.request_id, prefilter_result.matched_signals)
             elapsed_ms = int((time.perf_counter() - start_time) * 1000)
             _lifecycle, _freshness = self._freshness_to_lifecycle(FreshnessStatus.NOT_REQUIRED)
-            return VerificationResponse(
+            response = VerificationResponse(
                 request_id=request.request_id,
                 verification_id=verification_id,
                 status=_lifecycle,
@@ -149,8 +149,8 @@ class VerificationPipeline:
                 processing_time_ms=elapsed_ms,
                 checked_at=datetime.now(timezone.utc),
             )
-
-        # 3. Extract factual claims
+            await self._persist_verification(response, [], {}, session)
+            return response
         try:
             extracted_claims: List[ExtractedClaim] = await self.extraction_engine.extract_claims(
                 request.response_text
@@ -191,7 +191,7 @@ class VerificationPipeline:
         if not extracted_claims:
             logger.info("No time-sensitive claims extracted from text for request %s", request.request_id)
             elapsed_ms = int((time.perf_counter() - start_time) * 1000)
-            _lifecycle, _freshness = self._freshness_to_lifecycle(FreshnessStatus.UNCERTAIN)
+            _lifecycle, _freshness = self._freshness_to_lifecycle(FreshnessStatus.NOT_REQUIRED
             resp = VerificationResponse(
                 request_id=request.request_id,
                 verification_id=verification_id,
@@ -418,7 +418,8 @@ class VerificationPipeline:
         Safety invariant: Incomplete or unclear verifications can NEVER be labeled FRESH.
         """
         if not results:
-            return FreshnessStatus.FRESH, False
+            # No evaluated claims is not evidence of freshness.
+            return FreshnessStatus.NOT_REQUIRED, False
 
         claim_map = {c.claim_id: c for c in claims}
 
