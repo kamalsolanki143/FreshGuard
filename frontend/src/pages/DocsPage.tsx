@@ -185,6 +185,7 @@ export function DocsPage() {
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto w-full pt-28 pb-16 px-4 sm:px-6 lg:px-8">
+        <h1 className="mb-8 text-3xl font-black text-white">FreshGuard Documentation</h1>
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Docs Sidebar Navigation */}
           <aside className="w-full lg:w-64 flex-shrink-0">
