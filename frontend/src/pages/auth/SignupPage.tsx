@@ -59,15 +59,19 @@ export function SignupPage() {
             Fresh<span className="text-primary-400">Guard</span>
           </span>
         </Link>
-        <h2 className="mt-4 text-3xl font-extrabold text-white tracking-tight">
+        <h1 className="mt-4 text-3xl font-extrabold text-white tracking-tight">
           Create Developer Account
-        </h2>
+        </h1>
         <p className="mt-2 text-sm text-slate-400">
-          Get started with real-time LLM freshness verification
+          Real account registration is not configured in this demo deployment.
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md z-10 px-4">
+        <div role="note" className="mb-4 rounded-xl border border-amber-800/60 bg-amber-950/40 p-3 text-xs text-amber-200">
+          Demo mode only. This form does not create a secure account. Do not enter a real password or personal credentials.
+        </div>
+
         {/* Instant Demo Access for Judges */}
         <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-cyan-950/80 via-primary-950/60 to-purple-950/80 border border-cyan-800/60 shadow-xl shadow-cyan-950/40">
           <div className="flex items-center gap-2 text-cyan-300 font-bold text-sm mb-1.5">
