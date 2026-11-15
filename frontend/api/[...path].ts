@@ -11,7 +11,7 @@ type VercelResponse = {
 };
 
 const MAX_BODY_BYTES = 1_048_576;
-const BACKEND = (process.env.BACKEND_API_URL || "https://freshguard-4srf.onrender.com").replace(/\/+$/, "");
+const BACKEND = (process.env.BACKEND_API_URL || "https://freshguard-verification.onrender.com").replace(/\/+$/, "");
 
 function allowedRoute(path: string, method: string): boolean {
   if (method === "GET" && (path === "/health" || path === "/health/ready")) return true;
