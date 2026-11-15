@@ -127,11 +127,8 @@ async def create_verification(
     and category-specific freshness policies.
     Provides idempotent deduplication when the same request_id is resubmitted.
 
-    Execution mode note:
-    Verifications execute synchronously in blocking mode. Asynchronous 202 Accepted
-    background task delegation requires a durable background worker queue and is not
-    yet implemented; mode="async" executes synchronously and returns HTTP 200 with
-    completed lifecycle status.
+    Only mode="blocking" is supported. Requests using mode="async" are rejected
+    by request validation with HTTP 422 until a durable worker queue is implemented.
     """
     if x_request_id and not request.request_id:
         request.request_id = x_request_id
