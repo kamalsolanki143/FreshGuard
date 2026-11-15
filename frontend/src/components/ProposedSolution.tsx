@@ -30,7 +30,7 @@ export function ProposedSolution() {
   ];
 
   return (
-    <section className="relative py-24 bg-slate-950 text-slate-100 overflow-hidden border-t border-slate-800/80" id="solution">
+    <section className="relative py-24 bg-slate-950 text-slate-100 overflow-hidden border-t border-slate-800/80" >
       {/* Background colorful glow */}
       <div className="absolute top-1/3 right-0 w-96 h-96 bg-primary-900/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 left-10 w-96 h-96 bg-emerald-900/15 rounded-full blur-3xl pointer-events-none" />
