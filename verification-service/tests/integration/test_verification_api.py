@@ -531,7 +531,5 @@ async def test_async_mode_handling(integration_app):
     client, _, _ = integration_app
     payload = {"request_id": "req_async_mode", "text": "Python 3.12 is released.", "mode": "async"}
     resp = await client.post("/v1/verifications", json=payload)
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["status"] == "completed"
-    assert data["freshness_status"] == "FRESH"
+    assert resp.status_code == 422
+    assert resp.json()["code"] == "VALIDATION_ERROR"
