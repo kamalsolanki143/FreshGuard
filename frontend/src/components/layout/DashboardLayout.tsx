@@ -18,7 +18,7 @@ import {
   LogIn,
 } from 'lucide-react';
 import { useAuth } from '../../lib/authContext';
-import { checkHealth } from '../../lib/api';
+import { checkHealthReady } from '../../lib/api';
 
 interface NavItem {
   name: string;
@@ -49,7 +49,7 @@ export function DashboardLayout() {
     let mounted = true;
     const verifyHealth = async () => {
       try {
-        await checkHealth();
+        await checkHealthReady();
         if (mounted) setServiceStatus('online');
       } catch {
         if (mounted) setServiceStatus('offline');
@@ -241,9 +241,9 @@ export function DashboardLayout() {
               />
               <span>
                 {serviceStatus === 'online'
-                  ? 'Verification API Connected'
+                  ? 'Health OK · Verification ready'
                   : serviceStatus === 'offline'
-                  ? 'Backend Standby / Sleep'
+                  ? 'Verification endpoint unavailable'
                   : 'Connecting to API...'}
               </span>
             </div>
@@ -267,8 +267,8 @@ export function DashboardLayout() {
               <span className="font-bold text-cyan-300">Demo Mode:</span>
               <span className="text-slate-200">
                 {serviceStatus === 'online'
-                  ? 'Guest Evaluator session active. Connected to Verification Microservice. Temporal claim extraction and rule-based evaluation active.'
-                  : 'Guest Evaluator session active. Running in standby mode while verification backend connects.'}
+                  ? 'Guest Evaluator session active. Verification readiness check passed.'
+                  : 'Guest Evaluator session active. Verification endpoint is currently unavailable.'}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -288,7 +288,7 @@ export function DashboardLayout() {
               <span className="text-slate-300 font-mono">{user.email}</span>
               <span className="text-slate-500">({user.role})</span>
             </div>
-            <span className="text-[11px] text-emerald-400 font-semibold">Bifrost Gateway Ready</span>
+            <span className="text-[11px] text-amber-300 font-semibold">Demo session · no live developer authentication</span>
           </div>
         ) : (
           <div className="bg-amber-950/70 border-b border-amber-800/60 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-200">
