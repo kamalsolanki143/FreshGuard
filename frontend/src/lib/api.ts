@@ -44,6 +44,7 @@ export async function submitVerification(req: VerificationRequest): Promise<Veri
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'X-Request-ID': payload.request_id,
       },
       body: JSON.stringify(payload),
     });
