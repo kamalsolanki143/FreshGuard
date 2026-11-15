@@ -1,3 +1,7 @@
+declare const process: {
+  env: Record<string, string | undefined>;
+};
+
 type VercelRequest = AsyncIterable<Uint8Array> & {
   method?: string;
   url?: string;
