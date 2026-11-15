@@ -85,10 +85,14 @@ export async function getVerification(verificationId: string): Promise<Verificat
   });
 
   if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error(`Verification with ID "${trimmed}" was not found in the database.`);
+    let message = `HTTP ${response.status} ${response.statusText}`;
+    try {
+      const payload = await response.json();
+      message = payload.message || payload.error || payload.detail || message;
+    } catch {
+      // Keep the real HTTP status when the upstream response is not JSON.
     }
-    throw new Error(`Failed to retrieve verification (${response.status} ${response.statusText})`);
+    throw new Error(`Failed to retrieve verification: ${message}`);
   }
 
   return response.json();
