@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Github, Twitter, Linkedin, Mail, Shield, Heart, ExternalLink } from 'lucide-react';
+import { Github, Mail, Shield, Heart, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { APP_CONFIG } from '../lib/constants';
 
@@ -88,24 +88,6 @@ export function Footer() {
                 aria-label="GitHub"
               >
                 <Github className="h-5 w-5" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 hover:text-cyan-400 transition-colors text-slate-300"
-                aria-label="Twitter"
-              >
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 hover:text-cyan-400 transition-colors text-slate-300"
-                aria-label="LinkedIn"
-              >
-                <Linkedin className="h-5 w-5" />
               </a>
             </div>
             <div>
