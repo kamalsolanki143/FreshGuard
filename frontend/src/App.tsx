@@ -38,7 +38,12 @@ function RouteEffects() {
 
   useEffect(() => {
     if (!location.hash) return;
-    const target = decodeURIComponent(location.hash.slice(1));
+    let target: string;
+    try {
+      target = decodeURIComponent(location.hash.slice(1));
+    } catch {
+      return;
+    }
     const frame = window.requestAnimationFrame(() => {
       document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
