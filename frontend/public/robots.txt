@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Sitemap: https://fresh-guard-zeta.vercel.app/sitemap.xml
