@@ -19,7 +19,7 @@ services:
         value: INFO
       # Restrict CORS to expected frontend and gateway origins (avoid wildcard *)
       - key: CORS_ORIGINS
-        value: "http://localhost:3000,http://localhost:5173,http://localhost:4173,https://freshguard.pages.dev"
+        value: "http://localhost:3000,http://localhost:5173,http://localhost:4173,https://freshguard.pages.dev,https://fresh-guard-zeta.vercel.app"
       # DATABASE CONFIGURATION:
       # Default: sqlite+aiosqlite:///./freshguard.db (Note: local disk on Render free tier is ephemeral)
       # For persistent production storage, supply Neon Free PostgreSQL connection string:
@@ -30,16 +30,18 @@ services:
       # API AUTHENTICATION:
       # "warn" allows testing without blocking if key is missing; "enforce" requires X-API-Key header.
       - key: API_AUTH_MODE
-        value: warn
+        value: enforce
       - key: VERIFICATION_SERVICE_API_KEY
         sync: false
       # IMPORTANT: "mock" provider DOES NOT perform real AI verification or call external LLMs.
       # It returns deterministic stub responses for connectivity and contract testing.
       # To enable real AI verification, set LLM_PROVIDER to "openai" and supply LLM_API_KEY.
       - key: LLM_PROVIDER
-        value: mock
-      - key: LLM_MODEL
-        value: gpt-4o-mini
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
       - key: LLM_API_KEY
         sync: false
       - key: TAVILY_API_KEY

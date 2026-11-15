@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.schemas.claims import ClaimCategory
 
 
 class VerificationMode(str, Enum):
@@ -30,16 +32,36 @@ class VerificationRequest(BaseModel):
     )
     model: Optional[str] = Field(default=None, max_length=128, description="Source LLM model identifier")
     source: Optional[str] = Field(default="bifrost", max_length=64, description="Originating gateway or client")
-    mode: VerificationMode = Field(default=VerificationMode.BLOCKING, description="Execution mode: blocking or async")
+    mode: VerificationMode = Field(default=VerificationMode.BLOCKING, description="Execution mode: blocking only")
     categories: Optional[List[str]] = Field(default=None, description="Optional category filters for verification")
 
-    @model_validator(mode="before")
+    @field_validator("response_text", mode="before")
     @classmethod
-    def reconcile_text_fields(cls, data: object) -> object:
-        """Ensures either response_text or text is populated."""
-        if isinstance(data, dict):
-            if "response_text" not in data and "text" in data:
-                data["response_text"] = data["text"]
-            elif "text" not in data and "response_text" in data:
-                data["text"] = data["response_text"]
-        return data
+    def reject_blank_text(cls, value: object) -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("Text must contain at least one non-whitespace character.")
+        return value.strip()
+
+    @field_validator("mode", mode="before")
+    @classmethod
+    def require_supported_mode(cls, value: object) -> VerificationMode:
+        mode = VerificationMode(value)
+        if mode == VerificationMode.ASYNC:
+            raise ValueError(
+                "Async mode is not available yet. Use mode='blocking' until a durable worker is configured."
+            )
+        return mode
+
+    @field_validator("categories")
+    @classmethod
+    def validate_categories(cls, values: Optional[List[str]]) -> Optional[List[str]]:
+        if values is None:
+            return values
+        allowed = {category.value for category in ClaimCategory}
+        normalized = [value.strip().lower() for value in values]
+        unknown = sorted(set(normalized) - allowed)
+        if unknown:
+            raise ValueError(
+                f"Unknown categories: {', '.join(unknown)}. Allowed categories: {', '.join(sorted(allowed))}."
+            )
+        return normalized
