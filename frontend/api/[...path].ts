@@ -53,6 +53,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
   headers["X-API-Key"] = apiKey;
+  const forwardedFor = req.headers["x-forwarded-for"];
+  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
+    headers["X-FG-Client-IP"] = forwardedFor.split(",").pop()!.trim();
+  }
 
   let body: Uint8Array | undefined;
   if (method !== "GET" && method !== "HEAD") {
