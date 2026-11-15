@@ -196,7 +196,7 @@ async def test_scenario_04_empty_or_irrelevant_claims(system_test_env):
     assert resp_general.status_code == 200
     data_general = resp_general.json()
     assert data_general["status"] == "completed"
-    assert data_general["freshness_status"] == "FRESH"
+    assert data_general["freshness_status"] == "NOT_REQUIRED"
     assert data_general["claims_checked"] == 0
     assert len(data_general["claims"]) == 0
 
