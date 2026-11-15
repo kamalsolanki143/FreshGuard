@@ -180,7 +180,7 @@ export function IntegrationsPage() {
             <div className="p-3 bg-slate-950 rounded-xl border border-slate-800/80 space-y-2 text-xs font-mono">
               <div className="flex justify-between text-slate-400">
                 <span>Endpoint:</span>
-                <span className="text-slate-200">https://freshguard-verification.onrender.com</span>
+                <span className="text-slate-200">https://freshguard-4srf.onrender.com</span>
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Database:</span>
@@ -239,7 +239,7 @@ export function IntegrationsPage() {
           <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
             <span className="text-slate-500">Status</span>
             <span className="text-purple-300 font-semibold">
-              Live Web Adapter
+              Configured adapter · not live-probed
             </span>
           </div>
         </div>
