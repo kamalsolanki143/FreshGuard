@@ -1,7 +1,7 @@
 import { VerificationRequest, VerificationResponse, HealthResponse, ReadyResponse } from '../types';
 
-// The API base defaults to '/api' (handled by Vite proxy in dev, Cloudflare Pages Functions in production)
-// Can be overridden via VITE_API_URL environment variable if connecting directly to a deployed backend.
+// The API base defaults to '/api' (Vite proxy in development, Vercel serverless proxy in production).
+// Can be overridden via VITE_API_URL for an explicitly configured direct backend connection.
 const rawApiBase = (import.meta.env.VITE_API_URL as string | undefined) || '/api';
 export const API_BASE = rawApiBase.replace(/\/+$/, '');
 
