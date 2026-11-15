@@ -20,7 +20,15 @@ const BACKEND = (process.env.BACKEND_API_URL || "https://freshguard-verification
 function allowedRoute(path: string, method: string): boolean {
   if (method === "GET" && (path === "/health" || path === "/health/ready")) return true;
   if (method === "POST" && path === "/v1/verifications") return true;
-  if (method === "GET" && /^\/v1\/verifications\/[A-Za-z0-9_.-]+$/.test(path)) return true;
+  if (method === "GET" && /^\/v1\/verifications\/[^/]+$/.test(path)) {
+    const id = path.slice("/v1/verifications/".length);
+    try {
+      const decoded = decodeURIComponent(id);
+      return decoded.length > 0 && decoded !== "." && decoded !== ".." && !decoded.includes("/") && !decoded.includes("\\\\");
+    } catch {
+      return false;
+    }
+  }
   return false;
 }
 
