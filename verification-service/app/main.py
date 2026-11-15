@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI, Request
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -96,7 +97,7 @@ def create_app() -> FastAPI:
             request.url.path,
             exc.details,
         )
-        req_id = request.headers.get("X-Request-ID") or "unknown"
+        req_id = request.headers.get("X-Request-ID") or request.headers.get("x-request-id") or "unknown"
         return JSONResponse(
             status_code=exc.status_code,
             content={
@@ -107,6 +108,22 @@ def create_app() -> FastAPI:
                 "retryable": exc.status_code in (429, 502, 503, 504),
                 "details": exc.details or {},
             },
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        req_id = request.headers.get("X-Request-ID") or "unknown"
+        message = str(exc.detail) if isinstance(exc.detail, str) else "Request failed."
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "code": "HTTP_ERROR",
+                "message": message,
+                "request_id": req_id,
+                "retryable": exc.status_code in (429, 502, 503, 504),
+                "details": {},
+            },
+            headers=exc.headers,
         )
 
     @app.exception_handler(RequestValidationError)
