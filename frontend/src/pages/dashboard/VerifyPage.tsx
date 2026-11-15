@@ -11,7 +11,7 @@ import {
   Check,
   RotateCcw,
 } from 'lucide-react';
-import { submitVerification, checkHealth } from '../../lib/api';
+import { submitVerification, checkHealthReady } from '../../lib/api';
 import { useHistory } from '../../lib/historyContext';
 import { VerificationResponse, ClaimCategory } from '../../types';
 
@@ -68,7 +68,7 @@ export function VerifyPage() {
   // Check verification service connectivity on mount
   useEffect(() => {
     let mounted = true;
-    checkHealth()
+    checkHealthReady()
       .then(() => {
         if (mounted) setBackendStatus('connected');
       })
@@ -217,7 +217,7 @@ export function VerifyPage() {
       <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl">
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+            <label htmlFor="verification-text" className="text-xs font-bold text-slate-300 uppercase tracking-wider">
               LLM Response Content to Verify
             </label>
             <div className="flex items-center gap-2">
@@ -235,6 +235,9 @@ export function VerifyPage() {
           </div>
 
           <textarea
+                id="verification-text"
+                name="response-text"
+                aria-label="LLM response content to verify"
             rows={4}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
