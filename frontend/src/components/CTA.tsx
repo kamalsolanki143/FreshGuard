@@ -104,9 +104,9 @@ export function CTA() {
             <div className="w-10 h-10 rounded-xl bg-emerald-950 text-emerald-400 flex items-center justify-center mb-4 border border-emerald-800">
               <Clock className="h-5 w-5" />
             </div>
-            <h3 className="font-bold text-white text-base mb-1.5">Sub-20ms Overhead</h3>
+            <h3 className="font-bold text-white text-base mb-1.5">Go Middleware Overhead</h3>
             <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-              Optimized parallel verification threads ensure user response latency remains ultra-responsive.
+              This refers to the lightweight Go hook only. End-to-end verification also includes network, Tavily retrieval, and LLM evaluation time.
             </p>
           </div>
         </motion.div>
