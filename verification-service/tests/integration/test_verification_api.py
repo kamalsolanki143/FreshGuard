@@ -303,6 +303,28 @@ async def test_internal_error_handling(integration_app):
 
 
 @pytest.mark.asyncio
+async def test_async_mode_is_rejected_with_422(integration_app):
+    client, _, _ = integration_app
+    response = await client.post(
+        "/v1/verifications",
+        json={"request_id": "req_async_rejected", "text": "Current price is $10.", "mode": "async"},
+    )
+    assert response.status_code == 422
+    assert response.json()["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.asyncio
+async def test_unknown_category_is_rejected_with_422(integration_app):
+    client, _, _ = integration_app
+    response = await client.post(
+        "/v1/verifications",
+        json={"request_id": "req_bad_category", "text": "Current price is $10.", "categories": ["random_thing"]},
+    )
+    assert response.status_code == 422
+    assert response.json()["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.asyncio
 async def test_unsupported_content_type_returns_415(integration_app):
     client, _, _ = integration_app
     response = await client.post(
