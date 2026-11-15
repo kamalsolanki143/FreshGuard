@@ -1,5 +1,51 @@
 {
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/docs",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/signup",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/verify",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/history",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/cache",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/integrations",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/settings",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    }
   ]
 }

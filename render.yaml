@@ -31,6 +31,10 @@ services:
       # "warn" allows testing without blocking if key is missing; "enforce" requires X-API-Key header.
       - key: API_AUTH_MODE
         value: enforce
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+      - key: RATE_LIMIT_REQUESTS_PER_MINUTE
+        value: "10"
       - key: VERIFICATION_SERVICE_API_KEY
         sync: false
       # IMPORTANT: "mock" provider DOES NOT perform real AI verification or call external LLMs.

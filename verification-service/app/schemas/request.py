@@ -8,7 +8,6 @@ from app.schemas.claims import ClaimCategory
 class VerificationMode(str, Enum):
     """Execution mode for verification requests."""
     BLOCKING = "blocking"
-    ASYNC = "async"
 
 
 class VerificationRequest(BaseModel):
@@ -45,12 +44,7 @@ class VerificationRequest(BaseModel):
     @field_validator("mode", mode="before")
     @classmethod
     def require_supported_mode(cls, value: object) -> VerificationMode:
-        mode = VerificationMode(value)
-        if mode == VerificationMode.ASYNC:
-            raise ValueError(
-                "Async mode is not available yet. Use mode='blocking' until a durable worker is configured."
-            )
-        return mode
+        return VerificationMode(value)
 
     @field_validator("categories")
     @classmethod

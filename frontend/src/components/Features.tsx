@@ -62,14 +62,14 @@ export function Features() {
       description: 'Ultra-low overhead Go middleware designed to plug directly into Bifrost API gateways with zero runtime dependencies.',
       icon: Database,
       color: 'from-indigo-500 to-purple-600',
-      badge: 'Sub-20ms Overhead',
+      badge: 'Go Hook Overhead',
       badgeColor: 'bg-indigo-950/90 text-indigo-300 border-indigo-800',
       borderAccent: 'hover:border-indigo-500/60',
     },
   ];
 
   return (
-    <section className="py-24 bg-slate-950 text-slate-100 relative overflow-hidden border-t border-slate-800/80" id="features">
+    <section className="py-24 bg-slate-950 text-slate-100 relative overflow-hidden border-t border-slate-800/80" >
       {/* Decorative gradient spot */}
       <div className="absolute top-0 right-1/4 w-80 h-80 bg-purple-900/10 rounded-full blur-3xl pointer-events-none" />
 

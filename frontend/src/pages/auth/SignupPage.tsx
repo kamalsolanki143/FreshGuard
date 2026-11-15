@@ -59,15 +59,19 @@ export function SignupPage() {
             Fresh<span className="text-primary-400">Guard</span>
           </span>
         </Link>
-        <h2 className="mt-4 text-3xl font-extrabold text-white tracking-tight">
+        <h1 className="mt-4 text-3xl font-extrabold text-white tracking-tight">
           Create Developer Account
-        </h2>
+        </h1>
         <p className="mt-2 text-sm text-slate-400">
-          Get started with real-time LLM freshness verification
+          Real account registration is not configured in this demo deployment.
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md z-10 px-4">
+        <div role="note" className="mb-4 rounded-xl border border-amber-800/60 bg-amber-950/40 p-3 text-xs text-amber-200">
+          Demo mode only. This form does not create a secure account. Do not enter a real password or personal credentials.
+        </div>
+
         {/* Instant Demo Access for Judges */}
         <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-cyan-950/80 via-primary-950/60 to-purple-950/80 border border-cyan-800/60 shadow-xl shadow-cyan-950/40">
           <div className="flex items-center gap-2 text-cyan-300 font-bold text-sm mb-1.5">
@@ -98,7 +102,7 @@ export function SignupPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="signup-name" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Full Name
               </label>
               <div className="relative">
@@ -106,6 +110,9 @@ export function SignupPage() {
                   <User className="h-4 w-4" />
                 </div>
                 <input
+                  id="signup-name"
+                  name="name"
+                  autoComplete="name"
                   type="text"
                   required
                   value={name}
@@ -117,7 +124,7 @@ export function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="signup-email" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Developer Email
               </label>
               <div className="relative">
@@ -125,6 +132,9 @@ export function SignupPage() {
                   <Mail className="h-4 w-4" />
                 </div>
                 <input
+                  id="signup-email"
+                  name="email"
+                  autoComplete="email"
                   type="email"
                   required
                   value={email}
@@ -136,7 +146,7 @@ export function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="signup-password" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Password
               </label>
               <div className="relative">
@@ -144,6 +154,9 @@ export function SignupPage() {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
+                  id="signup-password"
+                  name="new-password"
+                  autoComplete="new-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
@@ -162,7 +175,7 @@ export function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="signup-confirm-password" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Confirm Password
               </label>
               <div className="relative">
@@ -170,6 +183,9 @@ export function SignupPage() {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
+                  id="signup-confirm-password"
+                  name="confirm-password"
+                  autoComplete="new-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={confirmPassword}

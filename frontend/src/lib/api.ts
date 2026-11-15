@@ -1,7 +1,7 @@
 import { VerificationRequest, VerificationResponse, HealthResponse, ReadyResponse } from '../types';
 
-// The API base defaults to '/api' (handled by Vite proxy in dev, Cloudflare Pages Functions in production)
-// Can be overridden via VITE_API_URL environment variable if connecting directly to a deployed backend.
+// The API base defaults to '/api' (Vite proxy in development, Vercel serverless proxy in production).
+// Can be overridden via VITE_API_URL for an explicitly configured direct backend connection.
 const rawApiBase = (import.meta.env.VITE_API_URL as string | undefined) || '/api';
 export const API_BASE = rawApiBase.replace(/\/+$/, '');
 
@@ -44,6 +44,7 @@ export async function submitVerification(req: VerificationRequest): Promise<Veri
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'X-Request-ID': payload.request_id,
       },
       body: JSON.stringify(payload),
     });
@@ -81,14 +82,19 @@ export async function getVerification(verificationId: string): Promise<Verificat
   const response = await fetch(`${API_BASE}/v1/verifications/${encodeURIComponent(trimmed)}`, {
     headers: {
       'Accept': 'application/json',
+      'X-Request-ID': `history-${Date.now()}`,
     },
   });
 
   if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error(`Verification with ID "${trimmed}" was not found in the database.`);
+    let message = `HTTP ${response.status} ${response.statusText}`;
+    try {
+      const payload = await response.json();
+      message = payload.message || payload.error || payload.detail || message;
+    } catch {
+      // Keep the real HTTP status when the upstream response is not JSON.
     }
-    throw new Error(`Failed to retrieve verification (${response.status} ${response.statusText})`);
+    throw new Error(`Failed to retrieve verification: ${message}`);
   }
 
   return response.json();

@@ -1,5 +1,8 @@
 import hmac
 import logging
+import asyncio
+import time
+from collections import defaultdict, deque
 from typing import Optional
 
 from fastapi import Depends, Header, Request
@@ -8,10 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import Settings, get_settings
 from app.database.database import get_db_session
 from app.services.verification_pipeline import VerificationPipeline
-from app.utils.exceptions import AuthenticationError, ConfigurationError
+from app.utils.exceptions import AuthenticationError, ConfigurationError, FreshGuardException
 
 _pipeline: Optional[VerificationPipeline] = None
 _auth_logger = logging.getLogger("freshguard.auth")
+_rate_limit_buckets: dict[str, deque[float]] = defaultdict(deque)
+_rate_limit_lock = asyncio.Lock()
 
 
 def get_app_settings() -> Settings:
@@ -162,3 +167,33 @@ async def require_api_key(
         "(API_AUTH_MODE=warn — request allowed).",
         request.url.path,
     )
+
+
+
+async def enforce_rate_limit(request: Request, settings: Settings = Depends(get_app_settings)) -> None:
+    """Apply a small per-client sliding-window limit to verification requests.
+
+    The limiter is intentionally in-process for the single-instance demo deployment.
+    Multi-instance production deployments should replace this store with Redis or
+    an API gateway rate-limit policy.
+    """
+    if not settings.RATE_LIMIT_ENABLED:
+        return
+
+    forwarded_client = request.headers.get("X-FG-Client-IP")
+    client_ip = forwarded_client or (request.client.host if request.client else "unknown")
+    now = time.monotonic()
+    window_seconds = 60.0
+
+    async with _rate_limit_lock:
+        bucket = _rate_limit_buckets[client_ip]
+        while bucket and now - bucket[0] >= window_seconds:
+            bucket.popleft()
+        if len(bucket) >= settings.RATE_LIMIT_REQUESTS_PER_MINUTE:
+            raise FreshGuardException(
+                message="Rate limit exceeded. Please retry after one minute.",
+                status_code=429,
+                code="RATE_LIMITED",
+                details={"limit": settings.RATE_LIMIT_REQUESTS_PER_MINUTE, "window_seconds": 60},
+            )
+        bucket.append(now)

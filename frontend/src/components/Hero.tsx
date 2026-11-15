@@ -170,7 +170,7 @@ export function Hero() {
           </div>
           <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-800 shadow-md">
             <Zap className="h-4 w-4 text-amber-400" />
-            <span>Sub-20ms Interception</span>
+            <span>Low-overhead Go middleware hook</span>
           </div>
           <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-800 shadow-md">
             <Database className="h-4 w-4 text-purple-400" />

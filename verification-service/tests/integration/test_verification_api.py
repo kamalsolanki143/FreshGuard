@@ -302,6 +302,65 @@ async def test_internal_error_handling(integration_app):
     assert "Secret database password" not in json.dumps(data)
 
 
+@pytest.mark.asyncio
+async def test_async_mode_is_rejected_with_422(integration_app):
+    client, _, _ = integration_app
+    response = await client.post(
+        "/v1/verifications",
+        json={"request_id": "req_async_rejected", "text": "Current price is $10.", "mode": "async"},
+    )
+    assert response.status_code == 422
+    assert response.json()["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.asyncio
+async def test_unknown_category_is_rejected_with_422(integration_app):
+    client, _, _ = integration_app
+    response = await client.post(
+        "/v1/verifications",
+        json={"request_id": "req_bad_category", "text": "Current price is $10.", "categories": ["random_thing"]},
+    )
+    assert response.status_code == 422
+    assert response.json()["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.asyncio
+async def test_unsupported_content_type_returns_415(integration_app):
+    client, _, _ = integration_app
+    response = await client.post(
+        "/v1/verifications",
+        content="plain text",
+        headers={"Content-Type": "text/plain"},
+    )
+    assert response.status_code == 415
+    assert response.json()["code"] == "UNSUPPORTED_MEDIA_TYPE"
+
+
+@pytest.mark.asyncio
+async def test_zero_claim_verification_is_persisted_and_retrievable(integration_app):
+    client, mock_pipeline, sm = integration_app
+    mock_pipeline.prefilter.evaluate = MagicMock(return_value=PrefilterResult(
+        requires_verification=True, categories=[], confidence=0.5
+    ))
+    mock_pipeline.extraction_engine.extract_claims = AsyncMock(return_value=[])
+    response = await client.post(
+        "/v1/verifications",
+        json={"request_id": "req_zero_claim", "text": "A timeless sentence."},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["freshness_status"] == "NOT_REQUIRED"
+    assert payload["claims_checked"] == 0
+    async with sm() as session:
+        record = await VerificationRepository.get_verification_by_id(session, payload["verification_id"])
+        assert record is not None
+        assert record.claims_checked == 0
+        assert len(record.claims) == 0
+    fetched = await client.get(f"/v1/verifications/{payload['verification_id']}")
+    assert fetched.status_code == 200
+    assert fetched.json()["freshness_status"] == "NOT_REQUIRED"
+
+
 # 14. Dependency overrides for isolated test databases
 @pytest.mark.asyncio
 async def test_dependency_overrides_isolated_db(integration_app):
@@ -472,7 +531,5 @@ async def test_async_mode_handling(integration_app):
     client, _, _ = integration_app
     payload = {"request_id": "req_async_mode", "text": "Python 3.12 is released.", "mode": "async"}
     resp = await client.post("/v1/verifications", json=payload)
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["status"] == "completed"
-    assert data["freshness_status"] == "FRESH"
+    assert resp.status_code == 422
+    assert resp.json()["code"] == "VALIDATION_ERROR"

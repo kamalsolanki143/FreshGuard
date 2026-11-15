@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Header, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_pipeline, require_api_key
+from app.api.dependencies import enforce_rate_limit, get_pipeline, require_api_key
 from app.database.database import get_db_session
 from app.database.models import VerificationRecord
 from app.database.repository import VerificationRepository
@@ -29,7 +29,7 @@ logger = logging.getLogger("freshguard.api.verifications")
 router = APIRouter(
     prefix="/v1/verifications",
     tags=["verifications"],
-    dependencies=[Depends(require_api_key)],
+    dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
 )
 
 
@@ -127,11 +127,8 @@ async def create_verification(
     and category-specific freshness policies.
     Provides idempotent deduplication when the same request_id is resubmitted.
 
-    Execution mode note:
-    Verifications execute synchronously in blocking mode. Asynchronous 202 Accepted
-    background task delegation requires a durable background worker queue and is not
-    yet implemented; mode="async" executes synchronously and returns HTTP 200 with
-    completed lifecycle status.
+    Only mode="blocking" is supported. Requests using mode="async" are rejected
+    by request validation with HTTP 422 until a durable worker queue is implemented.
     """
     if x_request_id and not request.request_id:
         request.request_id = x_request_id

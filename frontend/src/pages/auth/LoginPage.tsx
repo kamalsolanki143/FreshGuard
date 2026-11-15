@@ -67,15 +67,19 @@ export function LoginPage() {
             Fresh<span className="text-primary-400">Guard</span>
           </span>
         </Link>
-        <h2 className="mt-4 text-3xl font-extrabold text-white tracking-tight">
+        <h1 className="mt-4 text-3xl font-extrabold text-white tracking-tight">
           Sign In to FreshGuard
-        </h2>
+        </h1>
         <p className="mt-2 text-sm text-slate-400">
-          Enter your developer account or access the live evaluator demo
+          Demo workspace access is available. Real developer accounts are not configured.
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md z-10 px-4">
+        <div role="note" className="mb-4 rounded-xl border border-amber-800/60 bg-amber-950/40 p-3 text-xs text-amber-200">
+          Demo mode only. There is no real account authentication or password verification in this deployment. Do not enter a real password.
+        </div>
+
         {/* Judge / Evaluator Instant Access Callout */}
         <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-cyan-950/80 via-primary-950/60 to-purple-950/80 border border-cyan-800/60 shadow-xl shadow-cyan-950/40">
           <div className="flex items-center gap-2 text-cyan-300 font-bold text-sm mb-1.5">
@@ -106,7 +110,7 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="login-email" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Developer Email
               </label>
               <div className="relative">
@@ -114,6 +118,9 @@ export function LoginPage() {
                   <Mail className="h-4 w-4" />
                 </div>
                 <input
+                  id="login-email"
+                  name="email"
+                  autoComplete="email"
                   type="email"
                   required
                   value={email}
@@ -125,7 +132,7 @@ export function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="login-password" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Password
               </label>
               <div className="relative">
@@ -133,6 +140,9 @@ export function LoginPage() {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
+                  id="login-password"
+                  name="password"
+                  autoComplete="current-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}

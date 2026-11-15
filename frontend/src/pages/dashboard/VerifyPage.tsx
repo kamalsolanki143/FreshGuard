@@ -11,7 +11,7 @@ import {
   Check,
   RotateCcw,
 } from 'lucide-react';
-import { submitVerification, checkHealth } from '../../lib/api';
+import { submitVerification, checkHealthReady } from '../../lib/api';
 import { useHistory } from '../../lib/historyContext';
 import { VerificationResponse, ClaimCategory } from '../../types';
 
@@ -68,7 +68,7 @@ export function VerifyPage() {
   // Check verification service connectivity on mount
   useEffect(() => {
     let mounted = true;
-    checkHealth()
+    checkHealthReady()
       .then(() => {
         if (mounted) setBackendStatus('connected');
       })
@@ -163,7 +163,7 @@ export function VerifyPage() {
             />
             <span>
               {backendStatus === 'connected'
-                ? 'Verification API Connected'
+                ? 'Verification service ready'
                 : backendStatus === 'standby'
                 ? 'Backend Standby / Sleep'
                 : 'Checking Connection...'}
@@ -217,7 +217,7 @@ export function VerifyPage() {
       <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl">
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+            <label htmlFor="verification-text" className="text-xs font-bold text-slate-300 uppercase tracking-wider">
               LLM Response Content to Verify
             </label>
             <div className="flex items-center gap-2">
@@ -235,6 +235,9 @@ export function VerifyPage() {
           </div>
 
           <textarea
+                id="verification-text"
+                name="response-text"
+                aria-label="LLM response content to verify"
             rows={4}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
@@ -351,7 +354,7 @@ export function VerifyPage() {
             <div className="flex items-center gap-3 text-xs text-slate-400">
               <span className="flex items-center gap-1 font-mono">
                 <Clock className="h-3.5 w-3.5 text-amber-400" />
-                <span>{result.processing_time_ms ? `${result.processing_time_ms} ms` : '< 30 ms'}</span>
+                <span>{typeof result.processing_time_ms === 'number' ? `${result.processing_time_ms} ms end-to-end` : 'Latency unavailable'}</span>
               </span>
               <span className="font-mono text-[11px] text-slate-500">
                 {result.checked_at ? new Date(result.checked_at).toLocaleTimeString() : 'Just now'}

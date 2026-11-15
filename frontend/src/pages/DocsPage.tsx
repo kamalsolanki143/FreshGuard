@@ -37,7 +37,7 @@ export function DocsPage() {
             <span className="text-cyan-400 font-bold block">Quick Launch:</span>
             <pre className="font-mono text-slate-200">python scripts/run_dev.py</pre>
             <p className="text-slate-400">
-              Starts Python Verification Service on <code className="text-cyan-300">http://127.0.0.1:8000</code> and the React Frontend on <code className="text-cyan-300">http://localhost:3000</code>.
+              Local development only: Python Verification Service on <code className="text-cyan-300">http://127.0.0.1:8000</code> and React Frontend on <code className="text-cyan-300">http://localhost:3000</code>. Hosted deployments use the configured Render API endpoint and Vercel frontend URL.
             </p>
           </div>
         </div>
@@ -185,6 +185,7 @@ export function DocsPage() {
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto w-full pt-28 pb-16 px-4 sm:px-6 lg:px-8">
+        <h1 className="mb-8 text-3xl font-black text-white">FreshGuard Documentation</h1>
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Docs Sidebar Navigation */}
           <aside className="w-full lg:w-64 flex-shrink-0">

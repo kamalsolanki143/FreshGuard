@@ -15,12 +15,20 @@ type VercelResponse = {
 };
 
 const MAX_BODY_BYTES = 1_048_576;
-const BACKEND = (process.env.BACKEND_API_URL || "https://freshguard-verification.onrender.com").replace(/\/+$/, "");
+const BACKEND = (process.env.BACKEND_API_URL || "https://freshguard-4srf.onrender.com").replace(/\/+$/, "");
 
 function allowedRoute(path: string, method: string): boolean {
   if (method === "GET" && (path === "/health" || path === "/health/ready")) return true;
   if (method === "POST" && path === "/v1/verifications") return true;
-  if (method === "GET" && /^\/v1\/verifications\/[A-Za-z0-9_.-]+$/.test(path)) return true;
+  if (method === "GET" && /^\/v1\/verifications\/[^/]+$/.test(path)) {
+    const id = path.slice("/v1/verifications/".length);
+    try {
+      const decoded = decodeURIComponent(id);
+      return decoded.length > 0 && decoded !== "." && decoded !== ".." && !decoded.includes("/") && !decoded.includes("\\");
+    } catch {
+      return false;
+    }
+  }
   return false;
 }
 
@@ -45,6 +53,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
   headers["X-API-Key"] = apiKey;
+  const forwardedFor = req.headers["x-forwarded-for"];
+  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
+    headers["X-FG-Client-IP"] = forwardedFor.split(",").pop()!.trim();
+  }
 
   let body: Uint8Array | undefined;
   if (method !== "GET" && method !== "HEAD") {

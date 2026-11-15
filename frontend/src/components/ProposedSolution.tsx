@@ -14,7 +14,7 @@ export function ProposedSolution() {
     {
       icon: Search,
       title: '2. Live Tavily Evidence Retrieval',
-      description: 'Dispatches targeted freshness verification queries via Tavily API to fetch authoritative web evidence with sub-second latency.',
+      description: 'Dispatches targeted freshness verification queries via Tavily API to fetch authoritative web evidence; end-to-end latency depends on upstream search and LLM response times.',
       color: 'from-emerald-500 to-teal-500',
       badge: 'Live Web Search',
       badgeColor: 'bg-emerald-950/80 text-emerald-300 border border-emerald-800',
@@ -30,7 +30,7 @@ export function ProposedSolution() {
   ];
 
   return (
-    <section className="relative py-24 bg-slate-950 text-slate-100 overflow-hidden border-t border-slate-800/80" id="solution">
+    <section className="relative py-24 bg-slate-950 text-slate-100 overflow-hidden border-t border-slate-800/80" >
       {/* Background colorful glow */}
       <div className="absolute top-1/3 right-0 w-96 h-96 bg-primary-900/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 left-10 w-96 h-96 bg-emerald-900/15 rounded-full blur-3xl pointer-events-none" />
@@ -152,7 +152,7 @@ export function ProposedSolution() {
                 </div>
                 <div className="text-right">
                   <div className="text-emerald-400 font-bold text-sm">✓ Protected</div>
-                  <div className="text-[11px] text-slate-400">Total latency: &lt; 20ms</div>
+                  <div className="text-[11px] text-slate-400">Go hook overhead only; verification runs separately</div>
                 </div>
               </div>
             </div>

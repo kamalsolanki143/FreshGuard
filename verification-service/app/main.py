@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -98,8 +99,10 @@ def create_app() -> FastAPI:
             exc.details,
         )
         req_id = request.headers.get("X-Request-ID") or request.headers.get("x-request-id") or "unknown"
+        response_headers = {"Retry-After": "60"} if exc.status_code == 429 else None
         return JSONResponse(
             status_code=exc.status_code,
+            headers=response_headers,
             content={
                 "code": exc.code,
                 "message": exc.message,
@@ -138,7 +141,7 @@ def create_app() -> FastAPI:
                 "error": "Request validation failed.",
                 "request_id": req_id,
                 "retryable": False,
-                "details": {"validation_errors": exc.errors()},
+                "details": {"validation_errors": jsonable_encoder(exc.errors())},
             },
         )
 
@@ -162,6 +165,24 @@ def create_app() -> FastAPI:
                 "details": {},
             },
         )
+
+    @app.middleware("http")
+    async def enforce_verification_content_type(request: Request, call_next):
+        if request.method == "POST" and request.url.path.rstrip("/") == "/v1/verifications":
+            content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+            if content_type != "application/json":
+                request_id = request.headers.get("X-Request-ID") or "unknown"
+                return JSONResponse(
+                    status_code=415,
+                    content={
+                        "code": "UNSUPPORTED_MEDIA_TYPE",
+                        "message": "Content-Type must be application/json.",
+                        "request_id": request_id,
+                        "retryable": False,
+                        "details": {"received_content_type": content_type or None},
+                    },
+                )
+        return await call_next(request)
 
     # Register Routers
     app.include_router(health.router)

@@ -204,10 +204,14 @@ async def test_zero_extracted_claims(test_db_session: AsyncSession):
     resp = await pipeline.verify(req, session=test_db_session)
 
     assert resp.status == LifecycleStatus.COMPLETED
-    assert resp.freshness_status == FreshnessStatus.FRESH
+    assert resp.freshness_status == FreshnessStatus.NOT_REQUIRED
     assert resp.requires_refresh is False
     assert resp.claims_checked == 0
     assert len(resp.results) == 0
+    record = await VerificationRepository.get_verification_by_id(test_db_session, resp.verification_id)
+    assert record is not None
+    assert record.claims_checked == 0
+    assert len(record.claims) == 0
 
 
 # 6. Valid cache hit avoids Tavily

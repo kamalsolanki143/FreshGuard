@@ -54,7 +54,7 @@ export function ProblemStatement() {
   ];
 
   return (
-    <section className="py-24 bg-slate-900/60 relative overflow-hidden border-t border-slate-800/80" id="problem">
+    <section className="py-24 bg-slate-900/60 relative overflow-hidden border-t border-slate-800/80" >
       {/* Decorative ambient color spots */}
       <div className="absolute top-1/2 left-0 w-80 h-80 bg-rose-900/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-80 h-80 bg-amber-900/10 rounded-full blur-3xl pointer-events-none" />

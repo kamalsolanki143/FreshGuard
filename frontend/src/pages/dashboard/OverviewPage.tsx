@@ -12,16 +12,22 @@ import {
   Clock,
 } from 'lucide-react';
 import { useHistory } from '../../lib/historyContext';
-import { checkHealth } from '../../lib/api';
+import { checkHealthReady } from '../../lib/api';
 
 export function OverviewPage() {
   const { history, getStats } = useHistory();
   const stats = getStats();
+  const latencySamples = history
+    .map((item) => item.processing_time_ms)
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0);
+  const averageLatency = latencySamples.length
+    ? Math.round(latencySamples.reduce((sum, value) => sum + value, 0) / latencySamples.length)
+    : null;
   const [pythonHealth, setPythonHealth] = useState<'checking' | 'healthy' | 'offline'>('checking');
 
   useEffect(() => {
     let mounted = true;
-    checkHealth()
+    checkHealthReady()
       .then(() => {
         if (mounted) setPythonHealth('healthy');
       })
@@ -108,15 +114,15 @@ export function OverviewPage() {
         {/* Average Processing Time */}
         <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Engine Latency</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">End-to-End Latency</span>
             <Clock className="h-4 w-4 text-amber-400" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-black text-amber-400">~24</span>
-            <span className="text-xs font-medium text-slate-400">ms avg</span>
+            <span className="text-3xl font-black text-amber-400">{averageLatency ?? '—'}</span>
+            <span className="text-xs font-medium text-slate-400">{averageLatency === null ? 'no samples' : 'ms avg'}</span>
           </div>
           <p className="text-[11px] text-slate-400 mt-2">
-            Real-time pipeline prefilter + extraction
+            Average of recorded verification processing_time_ms values
           </p>
         </div>
       </div>
