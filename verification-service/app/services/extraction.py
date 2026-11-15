@@ -22,6 +22,11 @@ SECURITY AND INTEGRITY RULES:
    - product_availability (e.g., in stock, out of stock, pre-order, waitlist)
    - recent_events (e.g., announcements made recently, newly launched features)
    - statistics (e.g., market cap, inflation rate, user counts, current metrics)
+   - current public-office holders and leadership changes (e.g., president, prime minister, CEO, CTO)
+   - current locations and headquarters (e.g., company headquarters, office location)
+   - monetary values and market prices (e.g., Bitcoin price, stock price, product price)
+   - dated assertions and explicitly time-qualified statements (e.g., "as of November 2026", "currently", "latest", "today")
+   - product/company facts that may change over time (e.g., ownership, availability, operating status)
 4. Do NOT extract:
    - Subjective opinions or qualitative commentary (e.g., 'Python is the best language').
    - General timeless educational explanations (e.g., 'Photosynthesis uses sunlight').
@@ -33,7 +38,12 @@ For each extracted claim, provide:
 - text: concise, standalone statement of the factual claim
 - category: one of 'software_version', 'pricing', 'leadership', 'product_availability', 'recent_events', 'statistics', 'other'
 - entity: the primary subject entity (e.g., 'Python', 'OpenAI', 'Stripe')
-- attribute: specific property asserted (e.g., 'latest_stable_version', 'monthly_subscription_price', 'current_ceo')
+- attribute: specific property asserted (e.g., 'latest_stable_version', 'monthly_subscription_price', 'current_ceo', 'current_president', 'headquarters_location', 'current_market_price')
+- Preserve dates, currency, units, geographic scope, and comparison periods exactly.
+- Split compound sentences into separate claims when they assert independently verifiable facts.
+- Do not invent facts, entities, dates, or attributes that are absent from the input.
+- Treat explicit "as of" dates as part of the claim text and attribute.
+- If a claim is time-sensitive but its category is not covered above, use 'other' rather than omitting it.
 - time_sensitive: true
 """
 
