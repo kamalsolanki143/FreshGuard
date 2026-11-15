@@ -78,6 +78,8 @@ class Settings(BaseSettings):
         default=1_048_576,  # 1 MiB
         description="Maximum HTTP request body size in bytes. Requests exceeding this are rejected with 413.",
     )
+    RATE_LIMIT_ENABLED: bool = Field(default=False, description="Enable the in-process API rate limiter.")
+    RATE_LIMIT_REQUESTS_PER_MINUTE: int = Field(default=10, ge=1, le=600)
 
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./freshguard.db"
