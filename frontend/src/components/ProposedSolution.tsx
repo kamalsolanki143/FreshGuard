@@ -14,7 +14,7 @@ export function ProposedSolution() {
     {
       icon: Search,
       title: '2. Live Tavily Evidence Retrieval',
-      description: 'Dispatches targeted freshness verification queries via Tavily API to fetch authoritative web evidence with sub-second latency.',
+      description: 'Dispatches targeted freshness verification queries via Tavily API to fetch authoritative web evidence; end-to-end latency depends on upstream search and LLM response times.',
       color: 'from-emerald-500 to-teal-500',
       badge: 'Live Web Search',
       badgeColor: 'bg-emerald-950/80 text-emerald-300 border border-emerald-800',
