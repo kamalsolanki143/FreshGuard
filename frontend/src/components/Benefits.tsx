@@ -33,7 +33,7 @@ export function Benefits() {
       icon: ShieldCheck,
       color: 'from-cyan-500 to-blue-600',
       stat: '< 20ms',
-      statLabel: 'Low-latency interception',
+      statLabel: 'Go middleware overhead (not end-to-end verification latency)',
     },
   ];
 
