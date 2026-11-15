@@ -154,7 +154,7 @@ export function Benefits() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-400 font-bold">✓</span>
-                  <span>Sub-20ms overhead with configurable fail-open/closed rules</span>
+                  <span>Low Go middleware overhead, separate from end-to-end verification latency</span>
                 </li>
               </ul>
             </div>
