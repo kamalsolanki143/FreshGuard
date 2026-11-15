@@ -24,7 +24,7 @@ function allowedRoute(path: string, method: string): boolean {
     const id = path.slice("/v1/verifications/".length);
     try {
       const decoded = decodeURIComponent(id);
-      return decoded.length > 0 && decoded !== "." && decoded !== ".." && !decoded.includes("/") && !decoded.includes("\\\\");
+      return decoded.length > 0 && decoded !== "." && decoded !== ".." && !decoded.includes("/") && !decoded.includes("\\");
     } catch {
       return false;
     }
