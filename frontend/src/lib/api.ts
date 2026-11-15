@@ -82,6 +82,7 @@ export async function getVerification(verificationId: string): Promise<Verificat
   const response = await fetch(`${API_BASE}/v1/verifications/${encodeURIComponent(trimmed)}`, {
     headers: {
       'Accept': 'application/json',
+      'X-Request-ID': `history-${Date.now()}`,
     },
   });
 
