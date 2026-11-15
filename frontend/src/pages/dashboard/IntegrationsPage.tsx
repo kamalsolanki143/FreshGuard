@@ -184,11 +184,11 @@ export function IntegrationsPage() {
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Database:</span>
-                <span className="text-slate-200">{dbCheck.details?.dialect || 'sqlite'}</span>
+                <span className="text-slate-200">{dbCheck.details?.database || 'Unknown'}</span>
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Last Checked:</span>
-                <span className="text-slate-400 text-[11px]">{pythonCheck.lastChecked || 'Just now'}</span>
+                <span className="text-slate-400 text-[11px]">{pythonCheck.lastChecked || 'Not checked yet'}</span>
               </div>
             </div>
           </div>
