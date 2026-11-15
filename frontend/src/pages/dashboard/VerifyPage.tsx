@@ -163,7 +163,7 @@ export function VerifyPage() {
             />
             <span>
               {backendStatus === 'connected'
-                ? 'Verification API Connected'
+                ? 'Verification service ready'
                 : backendStatus === 'standby'
                 ? 'Backend Standby / Sleep'
                 : 'Checking Connection...'}
