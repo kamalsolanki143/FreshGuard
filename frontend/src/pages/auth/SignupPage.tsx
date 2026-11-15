@@ -102,7 +102,7 @@ export function SignupPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="signup-name" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Full Name
               </label>
               <div className="relative">
@@ -110,6 +110,9 @@ export function SignupPage() {
                   <User className="h-4 w-4" />
                 </div>
                 <input
+                  id="signup-name"
+                  name="name"
+                  autoComplete="name"
                   type="text"
                   required
                   value={name}
@@ -121,7 +124,7 @@ export function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="signup-email" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Developer Email
               </label>
               <div className="relative">
@@ -129,6 +132,9 @@ export function SignupPage() {
                   <Mail className="h-4 w-4" />
                 </div>
                 <input
+                  id="signup-email"
+                  name="email"
+                  autoComplete="email"
                   type="email"
                   required
                   value={email}
@@ -140,7 +146,7 @@ export function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="signup-password" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Password
               </label>
               <div className="relative">
@@ -148,6 +154,9 @@ export function SignupPage() {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
+                  id="signup-password"
+                  name="new-password"
+                  autoComplete="new-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
@@ -166,7 +175,7 @@ export function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="signup-confirm-password" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Confirm Password
               </label>
               <div className="relative">
@@ -174,6 +183,9 @@ export function SignupPage() {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
+                  id="signup-confirm-password"
+                  name="confirm-password"
+                  autoComplete="new-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={confirmPassword}
