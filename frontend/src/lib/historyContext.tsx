@@ -134,12 +134,15 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     try {
       const saved = sessionStorage.getItem(HISTORY_STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item) => !String(item?.request_id || '').startsWith('demo-req-'));
+        }
       }
     } catch {
       // ignore
     }
-    return SEED_VERIFICATIONS;
+    return [];
   });
 
   useEffect(() => {
