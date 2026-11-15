@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -140,7 +141,7 @@ def create_app() -> FastAPI:
                 "error": "Request validation failed.",
                 "request_id": req_id,
                 "retryable": False,
-                "details": {"validation_errors": exc.errors()},
+                "details": {"validation_errors": jsonable_encoder(exc.errors())},
             },
         )
 
