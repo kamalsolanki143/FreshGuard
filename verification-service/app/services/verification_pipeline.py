@@ -191,7 +191,7 @@ class VerificationPipeline:
         if not extracted_claims:
             logger.info("No time-sensitive claims extracted from text for request %s", request.request_id)
             elapsed_ms = int((time.perf_counter() - start_time) * 1000)
-            _lifecycle, _freshness = self._freshness_to_lifecycle(FreshnessStatus.NOT_REQUIRED
+            _lifecycle, _freshness = self._freshness_to_lifecycle(FreshnessStatus.NOT_REQUIRED)
             resp = VerificationResponse(
                 request_id=request.request_id,
                 verification_id=verification_id,
