@@ -105,12 +105,14 @@ export function HistoryPage() {
       {/* Direct ID Lookup Box */}
       <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl">
         <form onSubmit={handleLookup} className="space-y-2">
-          <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+          <label htmlFor="history-lookup-id" className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
             Direct Database Record Lookup by Verification ID
           </label>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <input
+                id="history-lookup-id"
+                name="verification-id"
                 type="text"
                 value={lookupId}
                 onChange={(e) => setLookupId(e.target.value)}
@@ -147,6 +149,9 @@ export function HistoryPage() {
         <div className="relative w-full sm:w-80">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
+            id="history-search"
+            name="history-search"
+            aria-label="Search verification history"
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
