@@ -34,6 +34,11 @@ export function SettingsPage() {
         </div>
       </div>
 
+      <div role="status" className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800/60 text-xs text-amber-200">
+        <p className="font-bold text-amber-100">Preview only · changes are not saved</p>
+        <p className="mt-1 text-amber-200/80">These switches update this page's local preview state only. They do not change the deployed verification service, Bifrost gateway, or persistent policy configuration.</p>
+      </div>
+
       {/* Freshness TTL Policies (Backend Supported) */}
       <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-sm space-y-5">
         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
