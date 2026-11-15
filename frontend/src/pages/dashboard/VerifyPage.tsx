@@ -354,7 +354,7 @@ export function VerifyPage() {
             <div className="flex items-center gap-3 text-xs text-slate-400">
               <span className="flex items-center gap-1 font-mono">
                 <Clock className="h-3.5 w-3.5 text-amber-400" />
-                <span>{result.processing_time_ms ? `${result.processing_time_ms} ms` : '< 30 ms'}</span>
+                <span>{typeof result.processing_time_ms === 'number' ? `${result.processing_time_ms} ms end-to-end` : 'Latency unavailable'}</span>
               </span>
               <span className="font-mono text-[11px] text-slate-500">
                 {result.checked_at ? new Date(result.checked_at).toLocaleTimeString() : 'Just now'}
