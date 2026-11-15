@@ -33,14 +33,14 @@ export function IntegrationsPage() {
         details: {
           service: h.service,
           version: h.version,
-          port: '8000',
+          endpoint: 'https://freshguard-verification.onrender.com',
         },
       });
     } catch (err: any) {
       setPythonCheck({
         status: 'error',
         lastChecked: new Date().toLocaleTimeString(),
-        error: err.message || 'Service offline or port 8000 unreachable',
+        error: err.message || 'Verification service health check failed',
       });
     }
 
@@ -52,14 +52,14 @@ export function IntegrationsPage() {
         lastChecked: new Date().toLocaleTimeString(),
         details: {
           database: r.database,
-          dialect: 'sqlite+aiosqlite',
+          readiness: r.status,
         },
       });
     } catch (err: any) {
       setDbCheck({
         status: 'warning',
         lastChecked: new Date().toLocaleTimeString(),
-        error: 'Database check failed or service offline',
+        error: err instanceof Error ? err.message : 'Database readiness check failed or service offline',
       });
     }
 
@@ -79,7 +79,7 @@ export function IntegrationsPage() {
             System Integrations & Health
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Status of LLM gateway hooks, factual verification services, and external search APIs
+            Live checks cover the verification API and database readiness. Bifrost and Tavily are configuration details, not live probes.
           </p>
         </div>
         <button
@@ -88,7 +88,7 @@ export function IntegrationsPage() {
           className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-xl border border-slate-700 flex items-center gap-2 transition-colors"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${testingAll ? 'animate-spin' : ''}`} />
-          <span>Run Live Health Checks</span>
+          <span>Run Verification API Checks</span>
         </button>
       </div>
 
@@ -177,7 +177,7 @@ export function IntegrationsPage() {
             <div className="p-3 bg-slate-950 rounded-xl border border-slate-800/80 space-y-2 text-xs font-mono">
               <div className="flex justify-between text-slate-400">
                 <span>Endpoint:</span>
-                <span className="text-slate-200">http://127.0.0.1:8000</span>
+                <span className="text-slate-200">https://freshguard-verification.onrender.com</span>
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Database:</span>
