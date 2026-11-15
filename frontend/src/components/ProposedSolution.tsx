@@ -152,7 +152,7 @@ export function ProposedSolution() {
                 </div>
                 <div className="text-right">
                   <div className="text-emerald-400 font-bold text-sm">✓ Protected</div>
-                  <div className="text-[11px] text-slate-400">Total latency: &lt; 20ms</div>
+                  <div className="text-[11px] text-slate-400">Go hook overhead only; verification runs separately</div>
                 </div>
               </div>
             </div>
