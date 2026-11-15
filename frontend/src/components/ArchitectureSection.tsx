@@ -16,7 +16,7 @@ export function ArchitectureSection() {
             System Architecture
           </span>
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-            Engineered for <span className="gradient-text">Zero-Overhead Protection</span>
+            Engineered for <span className="gradient-text">Low-Overhead Middleware Protection</span>
           </h2>
           <p className="mt-3 text-slate-400 text-sm sm:text-base leading-relaxed">
             FreshGuard decouples gateway latency from factual verification compute. The lightweight Go plugin intercepts model lifecycle events, while the Python verification engine runs independently.
