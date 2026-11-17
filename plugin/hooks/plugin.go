@@ -69,11 +69,11 @@ func NewPlugin(
 	}
 	if vClient == nil {
 		c, _ := client.NewClient(client.Config{
-			BaseURL:     cfg.VerificationServiceURL,
-			APIKey:      cfg.APIKey,
-			Timeout:     cfg.Timeout,
-			MaxRetries:  cfg.MaxRetries,
-			FailOpen:    cfg.FailOpen,
+			BaseURL:    cfg.VerificationServiceURL,
+			APIKey:     cfg.APIKey,
+			Timeout:    cfg.Timeout,
+			MaxRetries: cfg.MaxRetries,
+			FailOpen:   cfg.FailOpen,
 		}, nil)
 		vClient = c
 	}
@@ -131,11 +131,11 @@ func (p *FreshGuardPlugin) Init(rawConfig any) error {
 	p.config = cfg
 
 	c, err := client.NewClient(client.Config{
-		BaseURL:     cfg.VerificationServiceURL,
-		APIKey:      cfg.APIKey,
-		Timeout:     cfg.Timeout,
-		MaxRetries:  cfg.MaxRetries,
-		FailOpen:    cfg.FailOpen,
+		BaseURL:    cfg.VerificationServiceURL,
+		APIKey:     cfg.APIKey,
+		Timeout:    cfg.Timeout,
+		MaxRetries: cfg.MaxRetries,
+		FailOpen:   cfg.FailOpen,
 	}, nil)
 	if err != nil {
 		return fmt.Errorf("failed to init verification client: %w", err)
@@ -428,4 +428,3 @@ func generateCorrelationID() string {
 	_, _ = rand.Read(b)
 	return hex.EncodeToString(b)
 }
-

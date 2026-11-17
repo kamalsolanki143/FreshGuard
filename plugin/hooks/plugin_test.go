@@ -428,4 +428,3 @@ func TestPlugin_PostLLMHook_CacheHit_Expired_EvictsWithoutReverification(t *test
 		t.Errorf("expected cache_evicted true in telemetry, got %v", fg["cache_evicted"])
 	}
 }
-

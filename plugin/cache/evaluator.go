@@ -15,6 +15,7 @@ const (
 	VerdictExpired         EvaluationVerdict = "EXPIRED"
 	VerdictMissingMetadata EvaluationVerdict = "MISSING_METADATA"
 	VerdictContradictedHit EvaluationVerdict = "CONTRADICTED"
+	VerdictUnclearHit      EvaluationVerdict = "UNCLEAR"
 )
 
 // EvaluationResult captures the decision made when evaluating a cache hit.
@@ -92,6 +93,18 @@ func (e *Evaluator) EvaluateCacheHit(cacheID string, responseText string, at tim
 		}
 	}
 
+	// Check if cached response contains unclear claims (insufficient or ambiguous evidence)
+	if len(meta.Claims) > 0 && !meta.HasSupportedClaims() {
+		return EvaluationResult{
+			Verdict:                VerdictUnclearHit,
+			IsFresh:                false,
+			RequiresReverification: true,
+			ShouldEvict:            false,
+			Reason:                 "Cached claims are unclear or have insufficient evidence. Unclear claims must not be silently treated as fresh.",
+			Metadata:               &meta,
+		}
+	}
+
 	// Active and unexpired
 	return EvaluationResult{
 		Verdict:                VerdictFresh,
@@ -125,4 +138,3 @@ func (e *Evaluator) RecordVerification(cacheID string, responseText string, vRes
 	e.ledger.Put(meta)
 	return meta
 }
-

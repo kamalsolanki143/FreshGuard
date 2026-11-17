@@ -11,10 +11,10 @@ import (
 
 // Default TTL policies as defined in FreshGuard specification.
 const (
-	DefaultTTLPrice            = 24 * time.Hour
-	DefaultTTLSoftwareVersion  = 24 * time.Hour
-	DefaultTTLLeadership       = 7 * 24 * time.Hour
-	DefaultTTLDefault          = 24 * time.Hour
+	DefaultTTLPrice           = 24 * time.Hour
+	DefaultTTLSoftwareVersion = 24 * time.Hour
+	DefaultTTLLeadership      = 7 * 24 * time.Hour
+	DefaultTTLDefault         = 24 * time.Hour
 )
 
 // Policy defines TTL rules per claim category.
@@ -74,4 +74,3 @@ func HashText(text string) string {
 	h.Write([]byte(strings.TrimSpace(text)))
 	return hex.EncodeToString(h.Sum(nil))
 }
-

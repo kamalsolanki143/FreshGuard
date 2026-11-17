@@ -161,6 +161,34 @@ func TestEvaluator_CacheHitDecisions(t *testing.T) {
 	if resContra.Verdict != VerdictContradictedHit {
 		t.Errorf("expected VerdictContradictedHit, got %s", resContra.Verdict)
 	}
+
+	// 5. Unclear claims test (ambiguous or insufficient evidence)
+	vRespUnclear := &client.VerificationResponse{
+		VerificationID: "ver-unclear",
+		RequestID:      "req-unclear",
+		Status:         client.StatusCompleted,
+		CheckedAt:      &now,
+		Claims: []client.Claim{
+			{
+				ClaimID:   "c-3",
+				Category:  client.CategoryPricing,
+				Verdict:   client.VerdictUnclear,
+				CheckedAt: now,
+			},
+		},
+	}
+	evaluator.RecordVerification("cache-unclear-id", "Some ambiguous claim.", vRespUnclear)
+
+	resUnclear := evaluator.EvaluateCacheHit("cache-unclear-id", "Some ambiguous claim.", now.Add(1*time.Hour))
+	if resUnclear.IsFresh {
+		t.Error("unclear cached claims must not be silently marked fresh")
+	}
+	if !resUnclear.RequiresReverification {
+		t.Error("unclear cached claims must require reverification")
+	}
+	if resUnclear.Verdict != VerdictUnclearHit {
+		t.Errorf("expected VerdictUnclearHit, got %s", resUnclear.Verdict)
+	}
 }
 
 func TestBifrostEvictor(t *testing.T) {
@@ -326,4 +354,3 @@ func TestFileBackedLedger_Persistence(t *testing.T) {
 		t.Error("expected metadata to be deleted across restarts")
 	}
 }
-

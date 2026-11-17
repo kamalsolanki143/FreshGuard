@@ -77,13 +77,13 @@ type BifrostUsage struct {
 
 // BifrostResponse represents a normalized LLM response in Bifrost.
 type BifrostResponse struct {
-	ID          string         `json:"id"`
-	Model       string         `json:"model"`
-	Provider    string         `json:"provider"`
+	ID          string          `json:"id"`
+	Model       string          `json:"model"`
+	Provider    string          `json:"provider"`
 	Choices     []BifrostChoice `json:"choices"`
-	Usage       BifrostUsage   `json:"usage"`
-	CreatedAt   int64          `json:"created_at"`
-	ExtraFields map[string]any `json:"extra_fields,omitempty"`
+	Usage       BifrostUsage    `json:"usage"`
+	CreatedAt   int64           `json:"created_at"`
+	ExtraFields map[string]any  `json:"extra_fields,omitempty"`
 }
 
 // CacheDebugInfo captures semantic cache hit information placed in ExtraFields by Bifrost semanticcache.
@@ -129,4 +129,3 @@ type LLMPlugin interface {
 	PreLLMHook(ctx *BifrostContext, req *BifrostRequest) (*BifrostRequest, *LLMPluginShortCircuit, error)
 	PostLLMHook(ctx *BifrostContext, resp *BifrostResponse, bifrostErr *BifrostError) (*BifrostResponse, *BifrostError, error)
 }
-
