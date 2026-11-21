@@ -29,37 +29,32 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
 
     # Validate authentication configuration before accepting traffic.
-    # Raises ConfigurationError (aborting startup) when API_AUTH_MODE=enforce
-    # but VERIFICATION_SERVICE_API_KEY is not configured.
     try:
         validate_auth_config(settings)
-    except Exception as auth_cfg_err:
-        logger.critical(
-            "Authentication configuration check failed: %s — startup aborted.",
-            str(auth_cfg_err),
-        )
+    except Exception:
+        logger.critical("Authentication configuration check failed; startup aborted.", exc_info=True)
         raise
 
-    # Initialize database tables on application startup
+    # A service without initialized tables cannot safely accept verification traffic.
+    # Fail startup rather than accepting requests that will fail at the idempotency lookup.
     try:
         await init_db()
         app.state.db_initialized = True
         app.state.db_error = None
-    except Exception as db_init_err:
+    except Exception:
         app.state.db_initialized = False
-        app.state.db_error = str(db_init_err)
-        logger.error("Database auto-init on startup encountered error: %s", db_init_err)
+        app.state.db_error = "Database initialization failed"
+        logger.exception("Database initialization failed; refusing to start verification service.")
+        raise
 
-    yield
-
-    # Clean up database connection pool on shutdown
     try:
-        engine = get_engine()
-        await engine.dispose()
-    except Exception as db_disp_err:
-        logger.warning("Database disposal on shutdown encountered: %s", db_disp_err)
-
-    logger.info("Shutting down %s", settings.SERVICE_NAME)
+        yield
+    finally:
+        try:
+            await get_engine().dispose()
+        except Exception:
+            logger.warning("Database engine disposal failed during shutdown.", exc_info=True)
+        logger.info("Shutting down %s", settings.SERVICE_NAME)
 
 
 def create_app() -> FastAPI:
