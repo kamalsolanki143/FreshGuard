@@ -12,12 +12,15 @@ def app():
 
 @pytest.fixture
 async def client(app):
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-        headers={"Content-Type": "application/json"}
-    ) as c:
-        yield c
+    # ASGITransport does not automatically trigger FastAPI lifespan.
+    # Start it explicitly so schema initialization and shutdown match production.
+    async with app.router.lifespan_context(app):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+            headers={"Content-Type": "application/json"},
+        ) as c:
+            yield c
 
 
 @pytest.mark.asyncio
