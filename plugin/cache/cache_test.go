@@ -354,3 +354,154 @@ func TestFileBackedLedger_Persistence(t *testing.T) {
 		t.Error("expected metadata to be deleted across restarts")
 	}
 }
+
+func TestEvaluator_MixedSupportedAndUnclearClaims(t *testing.T) {
+	evaluator := NewEvaluator(NewDefaultPolicy(), nil)
+	now := time.Now().UTC()
+
+	vResp := &client.VerificationResponse{
+		VerificationID: "ver-mixed-unclear",
+		RequestID:      "req-mixed-unclear",
+		Status:         client.StatusCompleted,
+		CheckedAt:      &now,
+		Claims: []client.Claim{
+			{
+				ClaimID:   "c-supp",
+				Category:  client.CategorySoftwareVersion,
+				Verdict:   client.VerdictSupported,
+				CheckedAt: now,
+			},
+			{
+				ClaimID:   "c-uncl",
+				Category:  client.CategoryPricing,
+				Verdict:   client.VerdictUnclear,
+				CheckedAt: now,
+			},
+		},
+	}
+	evaluator.RecordVerification("cache-mixed-unclear-id", "Mixed supported and unclear claim.", vResp)
+
+	res := evaluator.EvaluateCacheHit("cache-mixed-unclear-id", "Mixed supported and unclear claim.", now.Add(10*time.Minute))
+	if res.IsFresh {
+		t.Error("mixed claims with any UNCLEAR claim must NOT be silently marked fresh")
+	}
+	if !res.RequiresReverification {
+		t.Error("mixed claims with any UNCLEAR claim must require reverification")
+	}
+	if res.Verdict != VerdictUnclearHit {
+		t.Errorf("expected VerdictUnclearHit, got %s", res.Verdict)
+	}
+	if res.ShouldEvict {
+		t.Error("unclear claims require reverification, but not immediate hard eviction")
+	}
+}
+
+func TestEvaluator_MixedSupportedAndContradictedClaims(t *testing.T) {
+	evaluator := NewEvaluator(NewDefaultPolicy(), nil)
+	now := time.Now().UTC()
+
+	vResp := &client.VerificationResponse{
+		VerificationID: "ver-mixed-contra",
+		RequestID:      "req-mixed-contra",
+		Status:         client.StatusCompleted,
+		CheckedAt:      &now,
+		Claims: []client.Claim{
+			{
+				ClaimID:   "c-supp",
+				Category:  client.CategorySoftwareVersion,
+				Verdict:   client.VerdictSupported,
+				CheckedAt: now,
+			},
+			{
+				ClaimID:   "c-contra",
+				Category:  client.CategoryPricing,
+				Verdict:   client.VerdictContradicted,
+				CheckedAt: now,
+			},
+		},
+	}
+	evaluator.RecordVerification("cache-mixed-contra-id", "Mixed supported and contradicted claim.", vResp)
+
+	res := evaluator.EvaluateCacheHit("cache-mixed-contra-id", "Mixed supported and contradicted claim.", now.Add(10*time.Minute))
+	if res.IsFresh {
+		t.Error("mixed claims with any CONTRADICTED claim must NOT be marked fresh")
+	}
+	if !res.RequiresReverification {
+		t.Error("mixed claims with any CONTRADICTED claim must require reverification")
+	}
+	if !res.ShouldEvict {
+		t.Error("contradicted claims must be marked for immediate cache eviction")
+	}
+	if res.Verdict != VerdictContradictedHit {
+		t.Errorf("expected VerdictContradictedHit, got %s", res.Verdict)
+	}
+}
+
+func TestEvaluator_MissingMetadata_EdgeCases(t *testing.T) {
+	evaluator := NewEvaluator(NewDefaultPolicy(), nil)
+	now := time.Now().UTC()
+
+	// 1. Completely unknown cache ID
+	res1 := evaluator.EvaluateCacheHit("unknown-cache-id", "Some response.", now)
+	if res1.Verdict != VerdictMissingMetadata || res1.IsFresh || !res1.RequiresReverification || !res1.ShouldEvict {
+		t.Errorf("expected missing metadata handling for unknown cache ID, got %+v", res1)
+	}
+
+	// 2. Known cache ID, but response text hash mismatch (e.g. cache tampering or collision)
+	vResp := &client.VerificationResponse{
+		VerificationID: "ver-hash-test",
+		RequestID:      "req-hash-test",
+		Status:         client.StatusCompleted,
+		CheckedAt:      &now,
+		Claims: []client.Claim{
+			{ClaimID: "c1", Category: "general", Verdict: client.VerdictSupported, CheckedAt: now},
+		},
+	}
+	evaluator.RecordVerification("cache-tamper-id", "Original verified response text.", vResp)
+
+	res2 := evaluator.EvaluateCacheHit("cache-tamper-id", "Modified/tampered response text.", now)
+	if res2.Verdict != VerdictMissingMetadata || res2.IsFresh || !res2.ShouldEvict {
+		t.Errorf("expected missing metadata on hash mismatch, got %+v", res2)
+	}
+
+	// 3. Empty cache ID
+	res3 := evaluator.EvaluateCacheHit("", "Some response.", now)
+	if res3.Verdict != VerdictMissingMetadata || res3.IsFresh {
+		t.Errorf("expected missing metadata on empty cache ID, got %+v", res3)
+	}
+}
+
+func TestEvaluator_ExpirationBoundaries(t *testing.T) {
+	evaluator := NewEvaluator(NewDefaultPolicy(), nil)
+	now := time.Now().UTC()
+
+	vResp := &client.VerificationResponse{
+		VerificationID: "ver-boundary-test",
+		RequestID:      "req-boundary-test",
+		Status:         client.StatusCompleted,
+		CheckedAt:      &now,
+		Claims: []client.Claim{
+			{ClaimID: "c1", Category: client.CategoryPricing, Verdict: client.VerdictSupported, CheckedAt: now},
+		},
+	}
+	meta := evaluator.RecordVerification("cache-boundary-id", "Boundary test text.", vResp)
+	expiresAt := meta.ExpiresAt
+
+	// 1. Just before expiration (100ms before) -> FRESH
+	resBefore := evaluator.EvaluateCacheHit("cache-boundary-id", "Boundary test text.", expiresAt.Add(-100*time.Millisecond))
+	if !resBefore.IsFresh || resBefore.Verdict != VerdictFresh || resBefore.RequiresReverification {
+		t.Errorf("expected fresh before expiration, got %+v", resBefore)
+	}
+
+	// 2. Exactly at expiration -> EXPIRED
+	resExact := evaluator.EvaluateCacheHit("cache-boundary-id", "Boundary test text.", expiresAt)
+	if resExact.IsFresh || resExact.Verdict != VerdictExpired || !resExact.RequiresReverification || !resExact.ShouldEvict {
+		t.Errorf("expected expired at exact expiration time, got %+v", resExact)
+	}
+
+	// 3. Just after expiration (100ms after) -> EXPIRED
+	resAfter := evaluator.EvaluateCacheHit("cache-boundary-id", "Boundary test text.", expiresAt.Add(100*time.Millisecond))
+	if resAfter.IsFresh || resAfter.Verdict != VerdictExpired || !resAfter.RequiresReverification || !resAfter.ShouldEvict {
+		t.Errorf("expected expired after expiration time, got %+v", resAfter)
+	}
+}

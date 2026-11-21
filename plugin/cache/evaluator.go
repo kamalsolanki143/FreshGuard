@@ -68,6 +68,18 @@ func (e *Evaluator) EvaluateCacheHit(cacheID string, responseText string, at tim
 		}
 	}
 
+	// Verify that response text matches verified metadata hash (prevent serving corrupted or tampered cache)
+	if meta.ResponseHash != "" && meta.ResponseHash != hash {
+		return EvaluationResult{
+			Verdict:                VerdictMissingMetadata,
+			IsFresh:                false,
+			RequiresReverification: true,
+			ShouldEvict:            true,
+			Reason:                 "Cached response text hash does not match verified metadata hash. Re-verification required.",
+			Metadata:               nil,
+		}
+	}
+
 	// Check if already expired according to TTL
 	if meta.IsExpired(at) {
 		return EvaluationResult{
@@ -94,13 +106,13 @@ func (e *Evaluator) EvaluateCacheHit(cacheID string, responseText string, at tim
 	}
 
 	// Check if cached response contains unclear claims (insufficient or ambiguous evidence)
-	if len(meta.Claims) > 0 && !meta.HasSupportedClaims() {
+	if meta.HasUnclearClaims() {
 		return EvaluationResult{
 			Verdict:                VerdictUnclearHit,
 			IsFresh:                false,
 			RequiresReverification: true,
 			ShouldEvict:            false,
-			Reason:                 "Cached claims are unclear or have insufficient evidence. Unclear claims must not be silently treated as fresh.",
+			Reason:                 "Cached response contains unclear claims with insufficient or ambiguous evidence. Unclear claims must not be silently treated as fresh.",
 			Metadata:               &meta,
 		}
 	}

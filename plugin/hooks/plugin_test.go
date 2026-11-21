@@ -3,6 +3,8 @@ package hooks
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -426,5 +428,132 @@ func TestPlugin_PostLLMHook_CacheHit_Expired_EvictsWithoutReverification(t *test
 	}
 	if fg["cache_evicted"] != true {
 		t.Errorf("expected cache_evicted true in telemetry, got %v", fg["cache_evicted"])
+	}
+}
+
+func TestPlugin_PostLLMHook_CacheHit_ReverificationServiceFailure_FailOpen(t *testing.T) {
+	// 1. Mock server that returns HTTP 500 when reverification is requested
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "Internal Server Error"}`))
+	}))
+	defer mockServer.Close()
+
+	vClient, _ := client.NewClient(client.Config{
+		BaseURL:    mockServer.URL,
+		Timeout:    1 * time.Second,
+		MaxRetries: 1,
+		FailOpen:   true,
+	}, nil)
+
+	evaluator := cache.NewEvaluator(cache.NewDefaultPolicy(), nil)
+	// Seed an expired cache entry
+	past := time.Now().UTC().Add(-24 * time.Hour)
+	evaluator.RecordVerification("expired-cache-failopen", "Some expired pricing claim.", &client.VerificationResponse{
+		VerificationID: "ver-expired-failopen",
+		RequestID:      "req-expired-failopen",
+		Status:         client.StatusCompleted,
+		CheckedAt:      &past,
+		Claims: []client.Claim{
+			{ClaimID: "c1", Category: client.CategoryPricing, Verdict: client.VerdictSupported, CheckedAt: past},
+		},
+	})
+
+	evictor := &MockEvictor{}
+	cfg := PluginConfig{
+		VerificationServiceURL: mockServer.URL,
+		FailOpen:               true,
+		EnableCacheEviction:    true,
+		ReverifyOnCacheHit:     true,
+	}
+	p := NewPlugin(cfg, vClient, evaluator, evictor)
+
+	ctx := schemas.NewBifrostContext(context.Background(), "req-failopen")
+	resp := &schemas.BifrostResponse{
+		ID: "resp-failopen",
+		Choices: []schemas.BifrostChoice{
+			{Message: schemas.ChatMessage{Role: "assistant", Content: "Some expired pricing claim."}},
+		},
+		ExtraFields: map[string]any{
+			"cache_debug": map[string]any{
+				"cache_hit": true,
+				"cache_id":  "expired-cache-failopen",
+			},
+		},
+	}
+
+	outResp, bifrostErr, err := p.PostLLMHook(ctx, resp, nil)
+	if err != nil || bifrostErr != nil {
+		t.Fatalf("expected fail-open to not return error on verification service outage, got err=%v bifrostErr=%v", err, bifrostErr)
+	}
+
+	fg, ok := outResp.ExtraFields["freshguard"].(map[string]any)
+	if !ok {
+		t.Fatal("expected freshguard telemetry in response extra fields")
+	}
+	if fg["status"] != "verification_service_unavailable" {
+		t.Errorf("expected status verification_service_unavailable, got %v", fg["status"])
+	}
+	if fg["fail_open"] != true {
+		t.Errorf("expected fail_open true in telemetry, got %v", fg["fail_open"])
+	}
+}
+
+func TestPlugin_PostLLMHook_CacheHit_ReverificationServiceFailure_FailClosed(t *testing.T) {
+	// 1. Mock server that returns HTTP 500 when reverification is requested
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "Internal Server Error"}`))
+	}))
+	defer mockServer.Close()
+
+	vClient, _ := client.NewClient(client.Config{
+		BaseURL:    mockServer.URL,
+		Timeout:    1 * time.Second,
+		MaxRetries: 0,
+		FailOpen:   false,
+	}, nil)
+
+	evaluator := cache.NewEvaluator(cache.NewDefaultPolicy(), nil)
+	past := time.Now().UTC().Add(-24 * time.Hour)
+	evaluator.RecordVerification("expired-cache-failclosed", "Some expired pricing claim.", &client.VerificationResponse{
+		VerificationID: "ver-expired-failclosed",
+		RequestID:      "req-expired-failclosed",
+		Status:         client.StatusCompleted,
+		CheckedAt:      &past,
+		Claims: []client.Claim{
+			{ClaimID: "c1", Category: client.CategoryPricing, Verdict: client.VerdictSupported, CheckedAt: past},
+		},
+	})
+
+	evictor := &MockEvictor{}
+	cfg := PluginConfig{
+		VerificationServiceURL: mockServer.URL,
+		FailOpen:               false,
+		EnableCacheEviction:    true,
+		ReverifyOnCacheHit:     true,
+	}
+	p := NewPlugin(cfg, vClient, evaluator, evictor)
+
+	ctx := schemas.NewBifrostContext(context.Background(), "req-failclosed")
+	resp := &schemas.BifrostResponse{
+		ID: "resp-failclosed",
+		Choices: []schemas.BifrostChoice{
+			{Message: schemas.ChatMessage{Role: "assistant", Content: "Some expired pricing claim."}},
+		},
+		ExtraFields: map[string]any{
+			"cache_debug": map[string]any{
+				"cache_hit": true,
+				"cache_id":  "expired-cache-failclosed",
+			},
+		},
+	}
+
+	outResp, bifrostErr, err := p.PostLLMHook(ctx, resp, nil)
+	if err == nil && bifrostErr == nil {
+		t.Fatal("expected error in fail-closed mode when verification service is unavailable")
+	}
+	if outResp != nil {
+		t.Errorf("expected outResp to be nil on fail-closed error, got %+v", outResp)
 	}
 }
