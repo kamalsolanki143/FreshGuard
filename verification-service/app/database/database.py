@@ -122,6 +122,41 @@ async def init_db(engine: Optional[AsyncEngine] = None) -> None:
     logger.info("Database tables verified and initialized.")
 
 
+async def check_db_schema_ready(session: Optional[AsyncSession] = None) -> bool:
+    """Verifies that the database is accessible and essential schema tables exist.
+    If tables are missing, attempts auto-initialization via init_db.
+    """
+    from sqlalchemy import text
+
+    async def _test_query(sess: AsyncSession) -> bool:
+        await sess.execute(text("SELECT 1 FROM verification_records LIMIT 1"))
+        return True
+
+    try:
+        if session is not None:
+            await _test_query(session)
+            return True
+        else:
+            sm = get_sessionmaker()
+            async with sm() as sess:
+                await _test_query(sess)
+                return True
+    except Exception as query_err:
+        logger.warning("Database schema check failed: %s. Attempting schema auto-init...", query_err)
+        try:
+            await init_db()
+            if session is not None:
+                await _test_query(session)
+            else:
+                sm = get_sessionmaker()
+                async with sm() as sess:
+                    await _test_query(sess)
+            return True
+        except Exception as heal_err:
+            logger.error("Database schema recovery failed: %s", heal_err)
+            return False
+
+
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency for scoped transactional database sessions."""
     sm = get_sessionmaker()

@@ -1,5 +1,5 @@
-import handler, { handleProxy } from "./[...path]";
+import { handleProxy, VercelRequest, VercelResponse } from "./_lib/proxy";
 
-export default async function healthHandler(req: any, res: any) {
+export default async function healthHandler(req: VercelRequest, res: VercelResponse) {
   return handleProxy(req, res, "/health");
 }

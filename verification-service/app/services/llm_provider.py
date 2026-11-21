@@ -421,7 +421,17 @@ class GeminiLLMProvider(BaseLLMProvider):
                     await asyncio.sleep(delay)
                     continue
 
-                if status_code == 429:
+                if status_code in (401, 403):
+                    raise ConfigurationError(
+                        message=f"Gemini API authentication failed (HTTP {status_code}): Invalid or missing GEMINI_API_KEY.",
+                        details={"status_code": status_code, "model": self.model},
+                    ) from exc
+                elif status_code == 404:
+                    raise ConfigurationError(
+                        message=f"Gemini API model not found (HTTP 404): Check GEMINI_MODEL setting ('{self.model}').",
+                        details={"status_code": 404, "model": self.model},
+                    ) from exc
+                elif status_code == 429:
                     raise ExtractionError(
                         message=f"Gemini API rate limit exceeded (HTTP 429): {str(exc)}",
                         details={"status_code": 429, "retryable": True, "model": self.model},

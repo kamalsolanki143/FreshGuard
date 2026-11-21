@@ -43,8 +43,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize database tables on application startup
     try:
         await init_db()
+        app.state.db_initialized = True
+        app.state.db_error = None
     except Exception as db_init_err:
-        logger.warning("Database auto-init on startup encountered: %s", db_init_err)
+        app.state.db_initialized = False
+        app.state.db_error = str(db_init_err)
+        logger.error("Database auto-init on startup encountered error: %s", db_init_err)
 
     yield
 

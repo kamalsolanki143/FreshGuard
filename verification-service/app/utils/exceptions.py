@@ -124,12 +124,14 @@ class PolicyNotFoundError(FreshGuardException):
 
 
 class DatabaseError(FreshGuardException):
-    """Raised when persistence or query fails."""
+    """Raised when persistence or database query fails.
+    Defaults to HTTP 503 (Service Unavailable) so clients know the database error is transient and retryable.
+    """
 
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+    def __init__(self, message: str, status_code: int = 503, details: Optional[Dict[str, Any]] = None):
         super().__init__(
             message=message,
-            status_code=500,
+            status_code=status_code,
             code="DATABASE_ERROR",
             details=details,
         )
