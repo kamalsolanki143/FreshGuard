@@ -18,7 +18,7 @@ from app.utils.logging import logger, setup_logging
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Lifespan context manager for startup and shutdown events."""
+    """Validate critical configuration and database schema before accepting traffic."""
     settings = get_settings()
     setup_logging(log_level=settings.LOG_LEVEL)
     logger.info(
@@ -28,38 +28,32 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         settings.ENVIRONMENT,
     )
 
-    # Validate authentication configuration before accepting traffic.
-    # Raises ConfigurationError (aborting startup) when API_AUTH_MODE=enforce
-    # but VERIFICATION_SERVICE_API_KEY is not configured.
     try:
         validate_auth_config(settings)
-    except Exception as auth_cfg_err:
-        logger.critical(
-            "Authentication configuration check failed: %s — startup aborted.",
-            str(auth_cfg_err),
-        )
+    except Exception:
+        logger.critical("Authentication configuration check failed; startup aborted.", exc_info=True)
         raise
 
-    # Initialize database tables on application startup
+    # A service without initialized tables cannot safely accept verification traffic.
+    # Fail startup rather than serving requests that later fail with opaque SQL errors.
     try:
         await init_db()
-    except Exception as db_init_err:
-        logger.warning("Database auto-init on startup encountered: %s", db_init_err)
+    except Exception:
+        logger.exception("Database initialization failed; refusing to start verification service.")
+        raise
 
-    yield
-
-    # Clean up database connection pool on shutdown
     try:
-        engine = get_engine()
-        await engine.dispose()
-    except Exception as db_disp_err:
-        logger.warning("Database disposal on shutdown encountered: %s", db_disp_err)
-
-    logger.info("Shutting down %s", settings.SERVICE_NAME)
+        yield
+    finally:
+        try:
+            await get_engine().dispose()
+        except Exception:
+            logger.warning("Database engine disposal failed during shutdown.", exc_info=True)
+        logger.info("Shutting down %s", settings.SERVICE_NAME)
 
 
 def create_app() -> FastAPI:
-    """Creates and configures the FastAPI application."""
+    """Creates and configures the application."""
     settings = get_settings()
 
     app = FastAPI(
@@ -71,7 +65,6 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Configure CORS
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
@@ -79,26 +72,21 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    # Reject HTTP requests whose body exceeds the configured maximum size.
-    # This middleware runs before any FastAPI routing or Pydantic parsing,
-    # protecting against memory-exhaustion via oversized payloads.
     app.add_middleware(
         RequestBodySizeLimitMiddleware,
         max_bytes=settings.MAX_REQUEST_BODY_SIZE,
     )
 
-    # Centralized Exception Handlers complying with APIError and shared schemas
     @app.exception_handler(FreshGuardException)
     async def freshguard_exception_handler(request: Request, exc: FreshGuardException) -> JSONResponse:
+        request_id = request.headers.get("X-Request-ID") or "unknown"
         logger.warning(
-            "FreshGuardException: %s [%s] Path: %s Details: %s",
-            exc.message,
+            "FreshGuardException request_id=%s code=%s path=%s details=%s",
+            request_id,
             exc.code,
             request.url.path,
             exc.details,
         )
-        req_id = request.headers.get("X-Request-ID") or request.headers.get("x-request-id") or "unknown"
         response_headers = {"Retry-After": "60"} if exc.status_code == 429 else None
         return JSONResponse(
             status_code=exc.status_code,
@@ -107,7 +95,7 @@ def create_app() -> FastAPI:
                 "code": exc.code,
                 "message": exc.message,
                 "error": exc.message,
-                "request_id": req_id,
+                "request_id": request_id,
                 "retryable": exc.status_code in (429, 502, 503, 504),
                 "details": exc.details or {},
             },
@@ -115,14 +103,14 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(StarletteHTTPException)
     async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-        req_id = request.headers.get("X-Request-ID") or "unknown"
+        request_id = request.headers.get("X-Request-ID") or "unknown"
         message = str(exc.detail) if isinstance(exc.detail, str) else "Request failed."
         return JSONResponse(
             status_code=exc.status_code,
             content={
                 "code": "HTTP_ERROR",
                 "message": message,
-                "request_id": req_id,
+                "request_id": request_id,
                 "retryable": exc.status_code in (429, 502, 503, 504),
                 "details": {},
             },
@@ -131,15 +119,20 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-        logger.warning("Validation error on path %s: %s", request.url.path, exc.errors())
-        req_id = request.headers.get("X-Request-ID") or "unknown"
+        request_id = request.headers.get("X-Request-ID") or "unknown"
+        logger.warning(
+            "Validation error request_id=%s path=%s errors=%s",
+            request_id,
+            request.url.path,
+            exc.errors(),
+        )
         return JSONResponse(
             status_code=422,
             content={
                 "code": "VALIDATION_ERROR",
                 "message": "Request validation failed.",
                 "error": "Request validation failed.",
-                "request_id": req_id,
+                "request_id": request_id,
                 "retryable": False,
                 "details": {"validation_errors": jsonable_encoder(exc.errors())},
             },
@@ -147,20 +140,21 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        request_id = request.headers.get("X-Request-ID") or "unknown"
         logger.error(
-            "Unhandled exception on %s: %s",
+            "Unhandled exception request_id=%s path=%s type=%s",
+            request_id,
             request.url.path,
-            str(exc),
+            type(exc).__name__,
             exc_info=True,
         )
-        req_id = request.headers.get("X-Request-ID") or "unknown"
         return JSONResponse(
             status_code=500,
             content={
                 "code": "INTERNAL_SERVER_ERROR",
                 "message": "An internal server error occurred.",
                 "error": "An internal server error occurred.",
-                "request_id": req_id,
+                "request_id": request_id,
                 "retryable": False,
                 "details": {},
             },
@@ -184,10 +178,8 @@ def create_app() -> FastAPI:
                 )
         return await call_next(request)
 
-    # Register Routers
     app.include_router(health.router)
     app.include_router(verifications.router)
-
     return app
 
 
