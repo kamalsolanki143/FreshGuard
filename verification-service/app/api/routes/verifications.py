@@ -134,10 +134,20 @@ async def create_verification(
         request.request_id = x_request_id
 
     # Check for idempotency: existing verification for identical request_id
-    existing_record = await VerificationRepository.get_verification_by_request_id(session, request.request_id)
-    if existing_record is not None:
-        logger.info("Idempotent hit: returning existing verification %s for request_id %s", existing_record.verification_id, request.request_id)
-        return record_to_response(existing_record)
+    try:
+        existing_record = await VerificationRepository.get_verification_by_request_id(session, request.request_id)
+        if existing_record is not None:
+            logger.info("Idempotent hit: returning existing verification %s for request_id %s", existing_record.verification_id, request.request_id)
+            return record_to_response(existing_record)
+    except Exception as db_err:
+        logger.error("Database error during idempotency check for request %s: %s", request.request_id, db_err, exc_info=True)
+        # Database lookup failure is retryable
+        raise FreshGuardException(
+            message="Database service is temporarily unavailable. Please retry in a few moments.",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            code="DATABASE_UNAVAILABLE",
+            details={"request_id": request.request_id, "stage": "idempotency_lookup"},
+        )
 
     try:
         logger.info("Starting verification for request %s (mode: %s)", request.request_id, request.mode)
@@ -148,10 +158,10 @@ async def create_verification(
     except Exception as exc:
         logger.error("Internal error during verification %s: %s", request.request_id, exc, exc_info=True)
         raise FreshGuardException(
-            message="An internal server error occurred during verification.",
+            message=f"An internal error occurred during verification ({type(exc).__name__}). Please retry.",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             code="INTERNAL_SERVER_ERROR",
-            details={},
+            details={"request_id": request.request_id, "error_type": type(exc).__name__},
         )
 
 

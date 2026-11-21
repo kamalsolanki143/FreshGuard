@@ -11,7 +11,7 @@ import {
   Check,
   RotateCcw,
 } from 'lucide-react';
-import { submitVerification, checkHealthReady } from '../../lib/api';
+import { submitVerification, checkHealthReady, VerificationError } from '../../lib/api';
 import { useHistory } from '../../lib/historyContext';
 import { VerificationResponse, ClaimCategory } from '../../types';
 
@@ -21,6 +21,14 @@ interface Preset {
   text: string;
   expectedVerdict: 'supported' | 'contradicted' | 'unclear';
   description: string;
+}
+
+interface ErrorDetail {
+  message: string;
+  code?: string;
+  status?: number;
+  requestId?: string;
+  retryable?: boolean;
 }
 
 const PRESETS: Preset[] = [
@@ -60,7 +68,9 @@ export function VerifyPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<VerificationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorInfo, setErrorInfo] = useState<ErrorDetail | null>(null);
   const [copiedId, setCopiedId] = useState(false);
+  const [copiedReqId, setCopiedReqId] = useState(false);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'connected' | 'standby'>('checking');
 
   const { addVerification } = useHistory();
@@ -81,46 +91,81 @@ export function VerifyPage() {
   }, []);
 
   const handleVerify = async (textToVerify = inputText) => {
+    if (loading) return; // Prevent concurrent/duplicate submissions
+
     if (!textToVerify || !textToVerify.trim()) {
       setError('Please enter or select text content containing claims to verify.');
+      setErrorInfo(null);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setErrorInfo(null);
+
+    const clientRequestId = `ws-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
     try {
       const resp = await submitVerification({
-        request_id: `ws-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        request_id: clientRequestId,
         text: textToVerify.trim(),
         categories: [selectedCategory],
       });
 
       setResult(resp);
       addVerification(resp);
-    } catch (err: any) {
-      setError(err.message || 'Verification failed. Ensure the verification backend is connected.');
+    } catch (err: unknown) {
+      if (err instanceof VerificationError) {
+        setError(err.message);
+        setErrorInfo({
+          message: err.message,
+          code: err.code,
+          status: err.status,
+          requestId: err.requestId || clientRequestId,
+          retryable: err.retryable,
+        });
+      } else {
+        const errorObj = err as any;
+        const msg = errorObj?.message || 'Verification failed. Ensure the verification backend is connected.';
+        setError(msg);
+        setErrorInfo({
+          message: msg,
+          code: errorObj?.code,
+          status: errorObj?.status,
+          requestId: errorObj?.requestId || clientRequestId,
+          retryable: errorObj?.retryable ?? (errorObj?.status === 502 || errorObj?.status === 503 || errorObj?.status === 504),
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleSelectPreset = (preset: Preset) => {
+    if (loading) return;
     setInputText(preset.text);
     setSelectedCategory(preset.category);
     handleVerify(preset.text);
   };
 
   const handleClear = () => {
+    if (loading) return;
     setInputText('');
     setResult(null);
     setError(null);
+    setErrorInfo(null);
   };
 
   const handleCopyId = (id: string) => {
     navigator.clipboard.writeText(id);
     setCopiedId(true);
     setTimeout(() => setCopiedId(false), 2000);
+  };
+
+  const handleCopyReqId = (id: string) => {
+    navigator.clipboard.writeText(id);
+    setCopiedReqId(true);
+    setTimeout(() => setCopiedReqId(false), 2000);
   };
 
   // Inspect claims
@@ -171,6 +216,16 @@ export function VerifyPage() {
           </span>
         </div>
       </div>
+
+      {/* Standby Advisory Notice */}
+      {backendStatus === 'standby' && (
+        <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-xl text-xs text-amber-200 flex items-center gap-2.5">
+          <Clock className="h-4 w-4 text-amber-400 flex-shrink-0" />
+          <span>
+            <strong>Render Free-Tier Idle Standby:</strong> The backend is in sleep mode to conserve compute resources. Submitting a verification request will automatically wake the service (~30-50s).
+          </span>
+        </div>
+      )}
 
       {/* Preset Quick-Buttons */}
       <div className="space-y-2">
@@ -280,16 +335,63 @@ export function VerifyPage() {
               </button>
             </div>
           </div>
+
+          {loading && (
+            <div className="flex items-center gap-2 text-xs text-cyan-300 bg-cyan-950/50 border border-cyan-800/80 rounded-xl px-3.5 py-2.5">
+              <Clock className="h-4 w-4 text-cyan-400 animate-spin flex-shrink-0" />
+              <span>
+                Evaluating claims via live verification engine. If the backend is waking from Render free-tier idle sleep, initial spin-up may take up to 45 seconds.
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Error Banner */}
       {error && (
-        <div className="p-4 rounded-xl bg-rose-950/70 border border-rose-800 text-rose-300 text-sm flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-rose-400 flex-shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <p className="font-bold">Verification Request Failed</p>
-            <p className="text-xs text-rose-200">{error}</p>
+        <div className="p-4 rounded-xl bg-rose-950/70 border border-rose-800 text-rose-300 text-sm space-y-3">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-rose-400 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-bold">Verification Request Failed</p>
+                {errorInfo?.code && (
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-900/80 text-rose-200 border border-rose-700">
+                    {errorInfo.code}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-rose-200 leading-relaxed">{error}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-rose-900/40 text-xs">
+            {errorInfo?.requestId ? (
+              <div className="flex items-center gap-1.5 font-mono text-[11px] text-rose-300">
+                <span className="text-rose-400">Request ID:</span>
+                <span className="bg-rose-900/40 px-1.5 py-0.5 rounded">{errorInfo.requestId}</span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyReqId(errorInfo.requestId!)}
+                  className="text-rose-400 hover:text-rose-200 transition-colors ml-1"
+                  title="Copy Request ID"
+                >
+                  {copiedReqId ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                </button>
+              </div>
+            ) : <div />}
+
+            {errorInfo?.retryable && (
+              <button
+                type="button"
+                onClick={() => handleVerify()}
+                disabled={loading}
+                className="px-3 py-1 bg-rose-900/80 hover:bg-rose-800 text-rose-100 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-rose-700"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>Retry Verification</span>
+              </button>
+            )}
           </div>
         </div>
       )}

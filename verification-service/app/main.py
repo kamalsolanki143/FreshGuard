@@ -28,6 +28,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         settings.ENVIRONMENT,
     )
 
+    # Validate authentication configuration before accepting traffic.
     try:
         validate_auth_config(settings)
     except Exception:
@@ -35,10 +36,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         raise
 
     # A service without initialized tables cannot safely accept verification traffic.
-    # Fail startup rather than serving requests that later fail with opaque SQL errors.
+    # Fail startup rather than accepting requests that will fail at the idempotency lookup.
     try:
         await init_db()
+        app.state.db_initialized = True
+        app.state.db_error = None
     except Exception:
+        app.state.db_initialized = False
+        app.state.db_error = "Database initialization failed"
         logger.exception("Database initialization failed; refusing to start verification service.")
         raise
 

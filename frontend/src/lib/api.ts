@@ -5,6 +5,33 @@ import { VerificationRequest, VerificationResponse, HealthResponse, ReadyRespons
 const rawApiBase = (import.meta.env.VITE_API_URL as string | undefined) || '/api';
 export const API_BASE = rawApiBase.replace(/\/+$/, '');
 
+export class VerificationError extends Error {
+  status?: number;
+  code?: string;
+  requestId?: string;
+  retryable: boolean;
+  details?: any;
+
+  constructor(
+    message: string,
+    options?: {
+      status?: number;
+      code?: string;
+      requestId?: string;
+      retryable?: boolean;
+      details?: any;
+    }
+  ) {
+    super(message);
+    this.name = 'VerificationError';
+    this.status = options?.status;
+    this.code = options?.code;
+    this.requestId = options?.requestId;
+    this.retryable = options?.retryable ?? false;
+    this.details = options?.details;
+  }
+}
+
 /**
  * Helper to execute a fetch request with automatic single retry for cold-start 502/503/504 errors.
  */
@@ -30,8 +57,9 @@ async function fetchWithColdStartRetry(url: string, options: RequestInit, retrie
  * Submits text to the FreshGuard Verification Service for real-time claim extraction and verification.
  */
 export async function submitVerification(req: VerificationRequest): Promise<VerificationResponse> {
+  const requestId = req.request_id || `web-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
   const payload = {
-    request_id: req.request_id || `web-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    request_id: requestId,
     text: req.text,
     mode: req.mode || 'blocking',
     categories: req.categories || ['pricing', 'software_version', 'leadership'],
@@ -44,31 +72,67 @@ export async function submitVerification(req: VerificationRequest): Promise<Veri
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'X-Request-ID': payload.request_id,
+        'X-Request-ID': requestId,
       },
       body: JSON.stringify(payload),
     });
   } catch (netErr: any) {
-    throw new Error(
-      `Network connection failed. The verification backend may be waking up from sleep on Render free tier. Details: ${netErr.message}`
+    throw new VerificationError(
+      `Network connection failed. The verification backend may be waking up from sleep on Render free tier. Details: ${netErr.message}`,
+      {
+        requestId,
+        retryable: true,
+        code: 'NETWORK_ERROR',
+      }
     );
   }
 
   if (!response.ok) {
     let errorDetail = `HTTP ${response.status} ${response.statusText}`;
+    let errorCode = `HTTP_${response.status}`;
+    let isRetryable = response.status === 502 || response.status === 503 || response.status === 504 || response.status === 429;
+    let serverRequestId = response.headers.get('x-request-id') || requestId;
+    let errJson: any = null;
+
     try {
-      const errJson = await response.json();
+      errJson = await response.json();
+      if (errJson.request_id) {
+        serverRequestId = errJson.request_id;
+      }
+      if (errJson.code) {
+        errorCode = errJson.code;
+      }
+      if (errJson.retryable !== undefined) {
+        isRetryable = Boolean(errJson.retryable);
+      } else if (errJson.code === 'BACKEND_COLD_START' || errJson.code === 'DATABASE_UNAVAILABLE') {
+        isRetryable = true;
+      }
+
       if (errJson.code === 'BACKEND_COLD_START' || response.status === 503) {
-        throw new Error(
-          errJson.message || 'Verification service on Render is waking up from idle sleep (~30-50s). Please retry in a moment.'
+        throw new VerificationError(
+          errJson.message || 'Verification service on Render is waking up from idle sleep (~30-50s). Please retry in a moment.',
+          {
+            status: response.status,
+            code: errorCode,
+            requestId: serverRequestId,
+            retryable: true,
+            details: errJson,
+          }
         );
       }
       errorDetail = errJson.message || errJson.detail || JSON.stringify(errJson);
     } catch (parseErr: any) {
-      if (parseErr.message && parseErr.message.includes('waking up')) throw parseErr;
-      // ignore JSON parse error
+      if (parseErr instanceof VerificationError) throw parseErr;
+      // non-JSON error from upstream
     }
-    throw new Error(`Verification request failed: ${errorDetail}`);
+
+    throw new VerificationError(`Verification request failed: ${errorDetail}`, {
+      status: response.status,
+      code: errorCode,
+      requestId: serverRequestId,
+      retryable: isRetryable,
+      details: errJson,
+    });
   }
 
   return response.json();

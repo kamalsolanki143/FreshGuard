@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_app_settings
 from app.config import Settings
-from app.database.database import get_db_session
+from app.database.database import check_db_schema_ready, get_db_session
 
 router = APIRouter(tags=["health"])
 
@@ -42,7 +42,7 @@ async def health_check(settings: Settings = Depends(get_app_settings)) -> Health
     summary="Service Readiness Check",
     responses={
         200: {"description": "Service is ready to handle requests"},
-        503: {"description": "Service is not ready — database is unreachable"},
+        503: {"description": "Service is not ready — database is unreachable or uninitialized"},
     },
 )
 async def readiness_check(
@@ -51,31 +51,50 @@ async def readiness_check(
 ) -> JSONResponse:
     """
     Verifies that the service is fully ready to handle requests by confirming
-    database connectivity via a lightweight ``SELECT 1`` query.
-
-    This is a **readiness** probe suitable for container orchestrators (Kubernetes,
-    Cloud Run, Render). It returns HTTP 200 when ready and HTTP 503 when the
-    database is unreachable, allowing the platform to route traffic away from
-    unhealthy instances.
-
-    The existing ``GET /health`` liveness contract is not affected.
+    database connectivity and required schema table presence.
+    Returns HTTP 200 when ready and HTTP 503 when the database is unreachable or uninitialized.
     """
     try:
         await session.execute(text("SELECT 1"))
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={
-                "status": "ready",
-                "service": settings.SERVICE_NAME,
-                "database": "ok",
-            },
-        )
-    except Exception:
+    except Exception as exc:
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
                 "status": "not_ready",
                 "service": settings.SERVICE_NAME,
                 "database": "unreachable",
+                "message": f"Database connection failed: {str(exc)}",
+            },
+        )
+
+    try:
+        is_ready = await check_db_schema_ready(session)
+        if is_ready:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    "status": "ready",
+                    "service": settings.SERVICE_NAME,
+                    "database": "ok",
+                },
+            )
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content={
+                    "status": "not_ready",
+                    "service": settings.SERVICE_NAME,
+                    "database": "uninitialized",
+                    "message": "Database tables could not be verified or initialized.",
+                },
+            )
+    except Exception as exc:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "not_ready",
+                "service": settings.SERVICE_NAME,
+                "database": "unreachable",
+                "message": f"Database connection failed: {str(exc)}",
             },
         )

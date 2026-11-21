@@ -12,7 +12,7 @@ def app():
 @pytest.fixture
 async def client(app):
     # ASGITransport does not automatically trigger FastAPI lifespan.
-    # Explicitly start lifespan so DB schema initialization matches production.
+    # Start it explicitly so schema initialization and shutdown match production.
     async with app.router.lifespan_context(app):
         async with AsyncClient(
             transport=ASGITransport(app=app),
