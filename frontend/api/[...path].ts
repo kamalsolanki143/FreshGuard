@@ -46,10 +46,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     else if (typeof qPath === "string") path = "/" + qPath;
   }
 
+  path = path.replace(/\/+$/, "") || "/";
+
   const matchedPath = req.headers["x-matched-path"] as string | undefined;
   if (matchedPath?.startsWith("/api/")) {
-    path = matchedPath.replace(/^\/api(?=\/)/, "");
+    path = matchedPath.replace(/^\/api(?=\/)/, "").replace(/\/+$/, "") || "/";
   }
+
+  // Vercel catch-all routing can inject the matched path as a query parameter.
+  // It is routing metadata, not an upstream API query parameter.
+  url.searchParams.delete("path");
 
   if (!allowedRoute(path, method)) {
     res.setHeader("Content-Type", "application/json");
@@ -68,7 +74,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestId = (req.headers["x-request-id"] as string) || `proxy-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
   headers["X-Request-ID"] = requestId;
 
-  const apiKey = process.env.VERIFICATION_SERVICE_API_KEY;
+  const configuredApiKey = process.env.VERIFICATION_SERVICE_API_KEY;
+  const clientApiKey = req.headers["x-api-key"];
+  const apiKey = configuredApiKey || (typeof clientApiKey === "string" ? clientApiKey : undefined);
   if (apiKey) headers["X-API-Key"] = apiKey;
 
   const forwardedFor = req.headers["x-forwarded-for"];
@@ -81,6 +89,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.body !== undefined && req.body !== null) {
       if (typeof req.body === "string") bodyData = req.body;
       else if (typeof req.body === "object") bodyData = JSON.stringify(req.body);
+      if (bodyData !== undefined) {
+        const bodySize = new TextEncoder().encode(bodyData as string).byteLength;
+        if (bodySize > MAX_BODY_BYTES) {
+          res.setHeader("Content-Type", "application/json");
+          res.status(413).send(JSON.stringify({
+            code: "REQUEST_TOO_LARGE",
+            message: "Request body exceeds 1 MiB.",
+            request_id: requestId,
+            retryable: false,
+          }));
+          return;
+        }
+      }
       if (!headers["Content-Type"]) headers["Content-Type"] = "application/json";
     } else {
       try {
