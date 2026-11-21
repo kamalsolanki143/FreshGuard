@@ -154,3 +154,33 @@ async def test_prompt_injection_safety():
     # The factual claim about Python should still be extracted despite adversarial prompt text
     assert len(claims) >= 1
     assert any(c.entity == "Python" for c in claims)
+
+
+@pytest.mark.asyncio
+async def test_extract_arbitrary_pricing_claims():
+    """Test extracting non-canned pricing claims (e.g. Anthropic token pricing)."""
+    engine = ClaimExtractionEngine(provider=MockLLMProvider())
+    text = "Anthropic Claude 3.5 Sonnet pricing is $3 per million input tokens and $15 per million output tokens."
+    claims = await engine.extract_claims(text)
+
+    assert len(claims) == 2
+    assert all(c.category == ClaimCategory.PRICING for c in claims)
+    assert any("$3" in c.text for c in claims)
+    assert any("$15" in c.text for c in claims)
+
+
+@pytest.mark.asyncio
+async def test_extract_arbitrary_leadership_and_versions():
+    """Test extracting non-canned leadership and software version claims."""
+    engine = ClaimExtractionEngine(provider=MockLLMProvider())
+    text = "Satya Nadella is the current CEO of Microsoft. Node.js 20.0 is the active LTS release."
+    claims = await engine.extract_claims(text)
+
+    assert len(claims) == 2
+    categories = {c.category for c in claims}
+    assert ClaimCategory.LEADERSHIP in categories
+    assert ClaimCategory.SOFTWARE_VERSION in categories
+    entities = {c.entity for c in claims}
+    assert "Microsoft" in entities
+    assert "Node.js" in entities
+

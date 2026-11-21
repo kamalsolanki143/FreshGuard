@@ -81,3 +81,12 @@ func (m FreshnessMetadata) HasSupportedClaims() bool {
 	return hasSupported
 }
 
+// HasUnclearClaims returns true if any verified claim has verdict UNCLEAR.
+func (m FreshnessMetadata) HasUnclearClaims() bool {
+	for _, c := range m.Claims {
+		if c.Verdict == client.VerdictUnclear {
+			return true
+		}
+	}
+	return false
+}

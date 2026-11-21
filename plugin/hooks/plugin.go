@@ -69,11 +69,11 @@ func NewPlugin(
 	}
 	if vClient == nil {
 		c, _ := client.NewClient(client.Config{
-			BaseURL:     cfg.VerificationServiceURL,
-			APIKey:      cfg.APIKey,
-			Timeout:     cfg.Timeout,
-			MaxRetries:  cfg.MaxRetries,
-			FailOpen:    cfg.FailOpen,
+			BaseURL:    cfg.VerificationServiceURL,
+			APIKey:     cfg.APIKey,
+			Timeout:    cfg.Timeout,
+			MaxRetries: cfg.MaxRetries,
+			FailOpen:   cfg.FailOpen,
 		}, nil)
 		vClient = c
 	}
@@ -131,11 +131,11 @@ func (p *FreshGuardPlugin) Init(rawConfig any) error {
 	p.config = cfg
 
 	c, err := client.NewClient(client.Config{
-		BaseURL:     cfg.VerificationServiceURL,
-		APIKey:      cfg.APIKey,
-		Timeout:     cfg.Timeout,
-		MaxRetries:  cfg.MaxRetries,
-		FailOpen:    cfg.FailOpen,
+		BaseURL:    cfg.VerificationServiceURL,
+		APIKey:     cfg.APIKey,
+		Timeout:    cfg.Timeout,
+		MaxRetries: cfg.MaxRetries,
+		FailOpen:   cfg.FailOpen,
 	}, nil)
 	if err != nil {
 		return fmt.Errorf("failed to init verification client: %w", err)
@@ -258,6 +258,9 @@ func (p *FreshGuardPlugin) PostLLMHook(
 			}
 		}
 
+		var reverifyFailed bool
+		var reverifyErrMsg string
+
 		if p.config.ReverifyOnCacheHit {
 			// Re-verify the cached text
 			vResp, err := p.client.Verify(ctx.Ctx, client.VerificationRequest{
@@ -301,17 +304,43 @@ func (p *FreshGuardPlugin) PostLLMHook(
 				resp.ExtraFields["freshguard"] = fgMeta
 				return resp, nil, nil
 			}
+
+			// Reverification failed
+			reverifyFailed = true
+			if err != nil {
+				reverifyErrMsg = err.Error()
+			}
+
+			if !p.config.FailOpen {
+				return nil, &schemas.BifrostError{
+					Code:           "REVERIFICATION_FAILED",
+					Message:        fmt.Sprintf("FreshGuard reverification failed: %v", err),
+					StatusCode:     502,
+					AllowFallbacks: false,
+				}, nil
+			}
 		}
 
-		// Re-verification was not attempted, or failed: mark explicitly unverified/stale
+		// Re-verification was not attempted, or failed (fail-open): mark explicitly unverified/stale
+		status := "stale_cache_hit"
+		if reverifyFailed {
+			status = "verification_service_unavailable"
+		}
+
 		fgMeta := map[string]any{
-			"status":                  "stale_cache_hit",
+			"status":                  status,
 			"is_fresh":                false,
 			"reverification_required": true,
 			"reason":                  evalRes.Reason,
 			"cache_id":                cacheID,
 			"cache_evicted":           evicted,
 			"verdict":                 evalRes.Verdict,
+		}
+		if reverifyFailed {
+			fgMeta["fail_open"] = true
+			if reverifyErrMsg != "" {
+				fgMeta["error"] = reverifyErrMsg
+			}
 		}
 		if evictErr != "" {
 			fgMeta["cache_eviction_error"] = evictErr
@@ -428,4 +457,3 @@ func generateCorrelationID() string {
 	_, _ = rand.Read(b)
 	return hex.EncodeToString(b)
 }
-

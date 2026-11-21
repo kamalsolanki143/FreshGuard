@@ -289,4 +289,3 @@ func TestClient_Verify_APIKeyAuthentication(t *testing.T) {
 		t.Errorf("unexpected verification ID: %s", resp.VerificationID)
 	}
 }
-

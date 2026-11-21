@@ -32,12 +32,27 @@ function allowedRoute(path: string, method: string): boolean {
   return false;
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handleProxy(req: VercelRequest, res: VercelResponse, explicitPath?: string) {
   const method = (req.method || "GET").toUpperCase();
   const url = new URL(req.url || "/", "https://vercel.invalid");
-  const path = url.pathname.replace(/^\/api(?=\/)/, "");
+  
+  let path = explicitPath || url.pathname.replace(/^\/api(?=\/)/, "");
+  if (!explicitPath && (path === "/[...path]" || path === "" || path === "/")) {
+    const qPath = (req as any).query?.path;
+    if (Array.isArray(qPath)) {
+      path = "/" + qPath.join("/");
+    } else if (typeof qPath === "string") {
+      path = "/" + qPath;
+    }
+  }
+
+  const matchedPath = req.headers["x-matched-path"] as string | undefined;
+  if (!explicitPath && matchedPath && matchedPath.startsWith("/api/")) {
+    path = matchedPath.replace(/^\/api(?=\/)/, "");
+  }
+
   if (!allowedRoute(path, method)) {
-    res.status(404).send(JSON.stringify({ code: "NOT_FOUND", message: "API route not found." }));
+    res.status(404).send(JSON.stringify({ code: "NOT_FOUND", message: "API route not found.", path }));
     return;
   }
 
@@ -96,4 +111,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       message: "Verification backend is temporarily unavailable. Please retry.",
     }));
   }
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  return handleProxy(req, res);
 }

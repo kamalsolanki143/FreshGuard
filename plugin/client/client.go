@@ -90,7 +90,7 @@ type VerificationRequest struct {
 type VerificationResponse struct {
 	VerificationID   string     `json:"verification_id"`
 	RequestID        string     `json:"request_id"`
-	Status           string     `json:"status"` // Lifecycle: "accepted", "completed", "failed"
+	Status           string     `json:"status"`                     // Lifecycle: "accepted", "completed", "failed"
 	FreshnessStatus  *string    `json:"freshness_status,omitempty"` // "FRESH", "STALE", "UNCERTAIN", "NOT_REQUIRED"
 	RequiresRefresh  bool       `json:"requires_refresh"`
 	ClaimsChecked    int        `json:"claims_checked"`
@@ -328,4 +328,3 @@ func (c *Client) calculateBackoff(attempt int) time.Duration {
 	}
 	return d
 }
-

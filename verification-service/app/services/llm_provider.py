@@ -94,41 +94,6 @@ class MockLLMProvider(BaseLLMProvider):
                     details={"validation_errors": e.errors()},
                 )
 
-        # Default heuristic mock behavior when no canned response is passed
-        # Provides reasonable default claims for common test strings
-        clean_text = user_text.lower()
-        mock_claims = []
-
-        if "python 3.12" in clean_text or "python" in clean_text:
-            mock_claims.append({
-                "claim_id": "claim_001",
-                "text": "Python 3.12 is the latest stable version",
-                "category": "software_version",
-                "entity": "Python",
-                "attribute": "latest_version",
-                "time_sensitive": True,
-            })
-
-        if "$20" in clean_text or "chatgpt plus" in clean_text or "cost" in clean_text:
-            mock_claims.append({
-                "claim_id": f"claim_00{len(mock_claims) + 1}",
-                "text": "ChatGPT Plus costs $20 per month",
-                "category": "pricing",
-                "entity": "ChatGPT Plus",
-                "attribute": "monthly_price",
-                "time_sensitive": True,
-            })
-
-        if "sundar pichai" in clean_text or "ceo" in clean_text:
-            mock_claims.append({
-                "claim_id": f"claim_00{len(mock_claims) + 1}",
-                "text": "Sundar Pichai is the CEO of Google",
-                "category": "leadership",
-                "entity": "Google",
-                "attribute": "ceo",
-                "time_sensitive": True,
-            })
-
         # Check if response_model is for verdict assessment
         if "verdict" in response_model.model_fields:
             lower_user = user_text.lower()
@@ -173,6 +138,116 @@ class MockLLMProvider(BaseLLMProvider):
                     "corrected_value": None,
                 })
 
+        # Default heuristic mock behavior for claim extraction
+        clean_text = user_text.lower()
+        mock_claims = []
+
+        # Preserved exact canonical matches for unit test backward compatibility
+        if "python 3.12" in clean_text or ("python" in clean_text and "latest" in clean_text):
+            mock_claims.append({
+                "claim_id": "claim_001",
+                "text": "Python 3.12 is the latest stable version",
+                "category": "software_version",
+                "entity": "Python",
+                "attribute": "latest_version",
+                "time_sensitive": True,
+            })
+
+        if "$20" in clean_text and "chatgpt plus" in clean_text:
+            mock_claims.append({
+                "claim_id": f"claim_00{len(mock_claims) + 1}",
+                "text": "ChatGPT Plus costs $20 per month",
+                "category": "pricing",
+                "entity": "ChatGPT Plus",
+                "attribute": "monthly_price",
+                "time_sensitive": True,
+            })
+
+        if "sundar pichai" in clean_text and "google" in clean_text:
+            mock_claims.append({
+                "claim_id": f"claim_00{len(mock_claims) + 1}",
+                "text": "Sundar Pichai is the CEO of Google",
+                "category": "leadership",
+                "entity": "Google",
+                "attribute": "ceo",
+                "time_sensitive": True,
+            })
+
+        # Track entities and texts already extracted to prevent duplicate claims
+        seen_entities = {c["entity"].lower() for c in mock_claims}
+        existing_texts = " ".join(c["text"].lower() for c in mock_claims)
+
+        # Dynamic, generalized extraction for arbitrary time-sensitive claims
+        import re
+
+        # A. Software Version Extraction
+        version_pattern = re.compile(
+            r'\b([A-Z][a-zA-Z0-9_\.\-]+(?:\.js)?)\s+(?:version\s+|v)?(\d+(?:\.\d+)+(?:-[a-z0-9\.]+)?)?\s+(?:is\s+(?:the\s+)?(?:(?:latest|current|newest|active\s+LTS|stable)\s+)+(?:version|release)|was\s+released|is\s+out)\b',
+            re.IGNORECASE,
+        )
+        for match in version_pattern.finditer(user_text):
+            entity = match.group(1).strip()
+            if entity.lower() in seen_entities or match.group(0).lower() in existing_texts:
+                continue
+            seen_entities.add(entity.lower())
+            ver = match.group(2) or "latest"
+            mock_claims.append({
+                "claim_id": f"claim_{len(mock_claims)+1:03d}",
+                "text": match.group(0).strip(),
+                "category": "software_version",
+                "entity": entity,
+                "attribute": "latest_stable_version",
+                "time_sensitive": True,
+            })
+
+        # B. Pricing Extraction
+        price_pattern = re.compile(
+            r'(\$\s*\d+(?:\.\d+)?|\bUSD\s*\d+(?:\.\d+)?|\bEUR\s*\d+(?:\.\d+)?|€\s*\d+(?:\.\d+)?)\s*(?:per|\/)?\s*([a-zA-Z0-9\s]+?tokens?|[a-zA-Z]+)?(?=[,\.;]|\s+and|\s*$)',
+            re.IGNORECASE,
+        )
+        price_matches = list(price_pattern.finditer(user_text))
+        if price_matches:
+            for p_match in price_matches:
+                # Skip if this specific price figure was already captured by a canonical claim
+                if p_match.group(1).replace(" ", "").lower() in existing_texts.replace(" ", ""):
+                    continue
+                # Determine subject entity from sentence preceding price
+                before_price = user_text[:p_match.start()]
+                last_sentence = before_price.split(".")[-1].strip()
+                entity_match = re.search(r'([A-Z][a-zA-Z0-9\s\.\-]+?)(?:\s+(?:pricing|costs?|launched|announced|priced|is|offers?|has))', last_sentence)
+                detected_entity = entity_match.group(1).strip() if entity_match else "Service"
+
+                unit = p_match.group(2) or "unit"
+                attr = "token_pricing" if "token" in unit.lower() else "subscription_price"
+                mock_claims.append({
+                    "claim_id": f"claim_{len(mock_claims)+1:03d}",
+                    "text": f"{detected_entity} pricing is {p_match.group(0).strip()}",
+                    "category": "pricing",
+                    "entity": detected_entity,
+                    "attribute": attr,
+                    "time_sensitive": True,
+                })
+
+        # C. Leadership Extraction
+        leadership_pattern = re.compile(
+            r'\b([A-Z][a-zA-Z\s]+?)\s+(?:is|became|was\s+appointed|serves\s+as)\s+(?:the\s+)?(?:current\s+)?(CEO|CTO|CFO|COO|President|Director|Prime Minister)\s+(?:of|at)\s+([A-Z][a-zA-Z0-9\s]+?)(?=[,\.;]|\s*$)',
+            re.IGNORECASE,
+        )
+        for l_match in leadership_pattern.finditer(user_text):
+            person = l_match.group(1).strip()
+            role = l_match.group(2).strip().lower()
+            org = l_match.group(3).strip()
+            if org.lower() in seen_entities or l_match.group(0).lower() in existing_texts:
+                continue
+            seen_entities.add(org.lower())
+            mock_claims.append({
+                "claim_id": f"claim_{len(mock_claims)+1:03d}",
+                "text": f"{person} is the {role.upper()} of {org}",
+                "category": "leadership",
+                "entity": org,
+                "attribute": role,
+                "time_sensitive": True,
+            })
 
         return response_model.model_validate({"claims": mock_claims})
 
@@ -291,7 +366,7 @@ class GeminiLLMProvider(BaseLLMProvider):
             )
 
         self.api_key = api_key
-        self.model = self.settings.GEMINI_MODEL or self.settings.LLM_MODEL or "gemini-2.5-flash"
+        self.model = self.settings.GEMINI_MODEL or self.settings.LLM_MODEL or "gemini-2.0-flash"
         self.timeout = self.settings.LLM_TIMEOUT_SECONDS
         self.max_retries = self.settings.LLM_MAX_RETRIES
 
@@ -309,11 +384,10 @@ class GeminiLLMProvider(BaseLLMProvider):
     ) -> T:
         from google.genai import errors, types
 
-        schema = response_model.model_json_schema()
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
             response_mime_type="application/json",
-            response_schema=schema,
+            response_schema=response_model,
             temperature=0.0,
         )
 
